@@ -1,0 +1,6 @@
+framework module Pods_YBAutoLayoutUITests {
+  umbrella header "Pods-YBAutoLayoutUITests-umbrella.h"
+
+  export *
+  module * { export * }
+}
