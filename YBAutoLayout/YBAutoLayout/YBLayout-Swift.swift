@@ -256,11 +256,11 @@ extension UIView {
     /// - Returns: 返回的snp
     private func yb_snp(isSafeArea: Bool) -> ConstraintAttributesDSL {
         if #available(iOS 11.0, *) {
-            return self.snp
-        } else {
             let safeAreaDSL: ConstraintAttributesDSL = self.safeAreaLayoutGuide.snp
             let viewDSL: ConstraintAttributesDSL = self.snp
             return isSafeArea ? safeAreaDSL : viewDSL
+        } else {
+            return self.snp
         }
     }
     
