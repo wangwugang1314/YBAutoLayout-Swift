@@ -255,9 +255,13 @@ extension UIView {
     /// - Parameter isSafeArea: 是否需要安全区域
     /// - Returns: 返回的snp
     private func yb_snp(isSafeArea: Bool) -> ConstraintAttributesDSL {
-        let safeAreaDSL: ConstraintAttributesDSL = self.safeAreaLayoutGuide.snp
-        let viewDSL: ConstraintAttributesDSL = self.snp
-        return isSafeArea ? safeAreaDSL : viewDSL
+        if #available(iOS 11.0, *) {
+            return self.snp
+        } else {
+            let safeAreaDSL: ConstraintAttributesDSL = self.safeAreaLayoutGuide.snp
+            let viewDSL: ConstraintAttributesDSL = self.snp
+            return isSafeArea ? safeAreaDSL : viewDSL
+        }
     }
     
     // MARK: - 整个约束布局
@@ -730,14 +734,22 @@ extension UIView {
                 if width >= 0 {
                     make.width.equalTo(width)
                 } else {
-                    make.width.equalTo(isSafeArea ? superView : superView.safeAreaLayoutGuide)
+                    if #available(iOS 11.0, *) {
+                        make.width.equalTo(isSafeArea ? superView : superView.safeAreaLayoutGuide)
+                    } else {
+                        make.width.equalTo(superView)
+                    }
                 }
             }
             if let height = size?.height {
                 if height >= 0 {
                     make.height.equalTo(height)
                 } else {
-                    make.height.equalTo(isSafeArea ? superView : superView.safeAreaLayoutGuide)
+                    if #available(iOS 11.0, *) {
+                        make.height.equalTo(isSafeArea ? superView : superView.safeAreaLayoutGuide)
+                    } else {
+                        make.height.equalTo(superView)
+                    }
                 }
             }
         }
