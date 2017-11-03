@@ -18,6 +18,7 @@
 		AD042B851F7DF68A00734D27 /* YBAutoLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD042B841F7DF68A00734D27 /* YBAutoLayoutTests.swift */; };
 		AD042B901F7DF68A00734D27 /* YBAutoLayoutUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD042B8F1F7DF68A00734D27 /* YBAutoLayoutUITests.swift */; };
 		AD042BA01F7DF9CC00734D27 /* YBBaseController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD042B9F1F7DF9CC00734D27 /* YBBaseController.swift */; };
+		AD0B921C1FABFA7E009648E4 /* YBController_16.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD0B921B1FABFA7E009648E4 /* YBController_16.swift */; };
 		AD2EB8FF1F7E2A720056A233 /* YBLayout-Swift.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD2EB8FD1F7E2A720056A233 /* YBLayout-Swift.swift */; };
 		AD2EB9001F7E2A720056A233 /* UIColorCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD2EB8FE1F7E2A720056A233 /* UIColorCategory.swift */; };
 		AD2EB9021F7E2B8B0056A233 /* YBCellModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD2EB9011F7E2B8B0056A233 /* YBCellModel.swift */; };
@@ -83,6 +84,7 @@
 		AD042B8F1F7DF68A00734D27 /* YBAutoLayoutUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YBAutoLayoutUITests.swift; sourceTree = "<group>"; };
 		AD042B911F7DF68A00734D27 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AD042B9F1F7DF9CC00734D27 /* YBBaseController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YBBaseController.swift; sourceTree = "<group>"; };
+		AD0B921B1FABFA7E009648E4 /* YBController_16.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YBController_16.swift; sourceTree = "<group>"; };
 		AD2EB8FD1F7E2A720056A233 /* YBLayout-Swift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "YBLayout-Swift.swift"; sourceTree = "<group>"; };
 		AD2EB8FE1F7E2A720056A233 /* UIColorCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIColorCategory.swift; sourceTree = "<group>"; };
 		AD2EB9011F7E2B8B0056A233 /* YBCellModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YBCellModel.swift; sourceTree = "<group>"; };
@@ -250,6 +252,7 @@
 				ADFEAC2E1F8B81A900D8A58A /* YBController_13.swift */,
 				ADFEAC321F8B853000D8A58A /* YBController_14.swift */,
 				ADFEAC341F8B867400D8A58A /* YBController_15.swift */,
+				AD0B921B1FABFA7E009648E4 /* YBController_16.swift */,
 			);
 			path = childrenController;
 			sourceTree = "<group>";
@@ -558,6 +561,7 @@
 				AD042BA01F7DF9CC00734D27 /* YBBaseController.swift in Sources */,
 				AD635E0E1F8B7A3F00CED051 /* YBController_8.swift in Sources */,
 				AD635E0C1F8B792100CED051 /* YBController_7.swift in Sources */,
+				AD0B921C1FABFA7E009648E4 /* YBController_16.swift in Sources */,
 				ADFEAC331F8B853000D8A58A /* YBController_14.swift in Sources */,
 				AD2EB90A1F7E3BAF0056A233 /* YBClass.swift in Sources */,
 				AD2EB9001F7E2A720056A233 /* UIColorCategory.swift in Sources */,

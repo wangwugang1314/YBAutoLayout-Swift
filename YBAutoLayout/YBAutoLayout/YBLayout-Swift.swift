@@ -226,20 +226,38 @@ struct yb_layoutEdgeInsets {
 
 extension UIView {
     
+    // MARK: - 私有方法
+    
     /// 添加到父试图
     ///
     /// - Parameters:
     ///   - view: 子试图
     ///   - isAdd: 是否添加
     private func addToSuperView(view: UIView, isAdd: Bool) {
-        let isAddToSuperView = view.superview
-        if isAdd && isAddToSuperView != nil {
-            assert(isAddToSuperView != nil, "试图已经添加到父试图，不予许重复添加")
-        }else if isAdd && isAddToSuperView == nil {
-            addSubview(view)
+        let addSuperView = view.superview
+        if isAdd {
+            if addSuperView == nil {
+                addSubview(view)
+            } else if addSuperView == self {
+                print("已经添加到当前试图，已经忽略重复添加动作")
+            } else {
+                assert(false, "不允许重复添加到不同的父试图")
+            }
         } else {
-            assert(isAddToSuperView != nil, "试图必须添加到父试图才能进行约束")
+            if addSuperView == nil {
+                assert(false, "试图必须添加到父试图才能进行约束")
+            }
         }
+    }
+    
+    /// 根据是否是安全区域返回snp
+    ///
+    /// - Parameter isSafeArea: 是否需要安全区域
+    /// - Returns: 返回的snp
+    private func yb_snp(isSafeArea: Bool) -> ConstraintAttributesDSL {
+        let safeAreaDSL: ConstraintAttributesDSL = self.safeAreaLayoutGuide.snp
+        let viewDSL: ConstraintAttributesDSL = self.snp
+        return isSafeArea ? safeAreaDSL : viewDSL
     }
     
     // MARK: - 整个约束布局
@@ -251,48 +269,55 @@ extension UIView {
     ///   - interval: 自试图之间的间隔
     ///   - duration: 平铺方向
     ///   - edge: 子试图与俯视图的边距(默认添加)
-    func yb_fill(views: [UIView], interval: CGFloat = 0, duration: YBLayoutDuration = .horizon, edge: yb_layoutEdgeInsets = yb_layoutEdgeInsets()) {
+    ///   - isSafeArea: 是否是安全区域
+    func yb_fill(views: [UIView], interval: CGFloat = 0, duration: YBLayoutDuration = .horizon, edge: yb_layoutEdgeInsets = yb_layoutEdgeInsets(), isSafeArea: Bool = true) {
         if views.count == 1 {
-            yb_fill(view: views[0], edge: edge, isAdd: true)
+            yb_fill(view: views[0], edge: edge, isSafeArea: isSafeArea, isAdd: true)
         } else {
+            
+            // ================= 根据是否是安全区域获取数据 ==================
+            let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
+            // ===========================================================
+            
+            // 设置
             for (index, view) in views.enumerated() {
                 addSubview(view)
                 if duration == .horizon {
                     view.snp.makeConstraints({ (make) in
                         if index == 0 {
-                            make.left.equalTo(self.snp.left).offset(edge.left)
+                            make.left.equalTo(yb_snp.left).offset(edge.left)
                         } else if index == views.count - 1 {
-                            make.right.equalTo(self.snp.right).offset(-edge.right)
+                            make.right.equalTo(yb_snp.right).offset(-edge.right)
                             make.left.equalTo(views[index - 1].snp.right).offset(interval)
                             make.width.equalTo(views.first!)
                         } else {
                             make.left.equalTo(views[index - 1].snp.right).offset(interval)
                             make.width.equalTo(views.first!)
                         }
-                        make.top.equalTo(self.snp.top).offset(edge.top)
-                        make.bottom.equalTo(self.snp.bottom).offset(-edge.bottom)
+                        make.top.equalTo(yb_snp.top).offset(edge.top)
+                        make.bottom.equalTo(yb_snp.bottom).offset(-edge.bottom)
                     })
-                }else{
+                } else {
                     view.snp.makeConstraints({ (make) in
                         if index == 0 {
-                            make.top.equalTo(edge.top)
+                            make.top.equalTo(yb_snp.top).offset(edge.top)
                         } else if index == views.count - 1 {
-                            make.bottom.equalTo(-edge.bottom)
+                            make.bottom.equalTo(yb_snp.bottom).offset(-edge.bottom)
                             make.top.equalTo(views[index - 1].snp.bottom).offset(interval)
                             make.height.equalTo(views.first!)
                         } else {
                             make.top.equalTo(views[index - 1].snp.bottom).offset(interval)
                             make.height.equalTo(views.first!)
                         }
-                        make.left.equalTo(self.snp.left).offset(edge.left)
-                        make.right.equalTo(self.snp.right).offset(-edge.right)
+                        make.left.equalTo(yb_snp.left).offset(edge.left)
+                        make.right.equalTo(yb_snp.right).offset(-edge.right)
                     })
                 }
             }
         }
     }
     
-    /// 填充(地板砖一样平铺)
+    /// 填充(地板砖一样平铺，不会再安全区域设置)
     ///
     /// - Parameters:
     ///   - views: 子试图
@@ -345,13 +370,15 @@ extension UIView {
                                     edge: yb_layoutEdgeInsets(left: edge.left,
                                                               top: 0,
                                                               bottom: 0,
-                                                              right: edge.right))
+                                                              right: edge.right),
+                                    isSafeArea: false)
                 sectionViews.append(sectionView)
             }
             yb_fill(views: sectionViews,
                     interval: interval.v,
                     duration: .vertical,
-                    edge: yb_layoutEdgeInsets(left: 0, top: edge.top, bottom: edge.bottom, right: 0))
+                    edge: yb_layoutEdgeInsets(left: 0, top: edge.top, bottom: edge.bottom, right: 0),
+                    isSafeArea: false)
         } else {
             var sectionViews = [UIView]()
             for section in tileViews {
@@ -362,17 +389,19 @@ extension UIView {
                                     edge: yb_layoutEdgeInsets(left: 0,
                                                               top: edge.top,
                                                               bottom: edge.bottom,
-                                                              right: 0))
+                                                              right: 0),
+                                    isSafeArea: false)
                 sectionViews.append(sectionView)
             }
             yb_fill(views: sectionViews,
                     interval: interval.h,
                     duration: .horizon,
-                    edge: yb_layoutEdgeInsets(left: edge.left, top: 0, bottom: 0, right: edge.right))
+                    edge: yb_layoutEdgeInsets(left: edge.left, top: 0, bottom: 0, right: edge.right),
+                    isSafeArea: false)
         }
     }
     
-    /// 平铺（指定Item的高度）
+    /// 平铺（指定Item的高度，不会再安全区域设置）
     ///
     /// - Parameters:
     ///   - views: 需要平铺的子试图
@@ -415,14 +444,20 @@ extension UIView {
     /// - Parameters:
     ///   - view: 子试图
     ///   - edge: 子试图与父试图的边距
+    ///   - isSafeArea: 是否是安全区域
     ///   - isAdd: 是否添加到父试图(默认添加)
-    func yb_fill(view: UIView, edge: yb_layoutEdgeInsets = yb_layoutEdgeInsets(), isAdd: Bool = true) {
+    func yb_fill(view: UIView, edge: yb_layoutEdgeInsets = yb_layoutEdgeInsets(), isSafeArea: Bool = true, isAdd: Bool = true) {
         addToSuperView(view: view, isAdd: isAdd)
+        // ================= 根据是否是安全区域获取数据 ==================
+        let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
+        // ===========================================================
         view.snp.makeConstraints { (make) in
-            make.edges.equalTo(UIEdgeInsets(top: edge.top, left: edge.left, bottom: edge.bottom, right: edge.right))
+            make.left.equalTo(yb_snp.left).offset(edge.left)
+            make.top.equalTo(yb_snp.top).offset(edge.top)
+            make.right.equalTo(yb_snp.right).offset(-edge.right)
+            make.bottom.equalTo(yb_snp.bottom).offset(-edge.bottom)
         }
     }
-
     
     /// 对齐布局(self: 参照试图)
     ///
@@ -432,83 +467,49 @@ extension UIView {
     ///   - width: 需要布局试图的宽度
     ///   - interval: 布局试图与参照试图的间隔
     ///   - sideInterval: 布局试图与参照试图的边距
+    ///   - Parameter isSafeArea: 是否需要安全区域
     ///   - isAdd: 是否添加到参照试图上(默认添加)
-    func yb_alignment(view: UIView, duration: YBLayoutAlignment, width: CGFloat? = nil, interval: CGFloat = 0, sideInterval: CGFloat = 0, isAdd: Bool = true) {
+    func yb_alignment(view: UIView, duration: YBLayoutAlignment, width: CGFloat? = nil, interval: CGFloat = 0, sideInterval: CGFloat = 0, isSafeArea: Bool = true, isAdd: Bool = true) {
         addToSuperView(view: view, isAdd: isAdd)
-        switch duration {
-        case .inTop:
-            view.snp.makeConstraints({ (make) in
-                make.top.equalTo(self.snp.top).offset(interval)
+        // ================= 根据是否是安全区域获取数据 ==================
+        let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
+        // ===========================================================
+        view.snp.makeConstraints({ (make) in
+            // 设置宽度与边距
+            switch duration {
+            case .inTop, .inBottom, .outTop, .outBottom:
                 if let width = width {
                     make.height.equalTo(width)
                 }
-                make.left.equalTo(self.snp.left).offset(sideInterval)
-                make.right.equalTo(self.snp.right).offset(-sideInterval)
-            })
-        case .inLeft:
-            view.snp.makeConstraints({ (make) in
-                make.left.equalTo(self.snp.left).offset(interval)
+                make.left.equalTo(yb_snp.left).offset(sideInterval)
+                make.right.equalTo(yb_snp.right).offset(-sideInterval)
+            default:
                 if let width = width {
                     make.width.equalTo(width)
                 }
-                make.top.equalTo(self.snp.top).offset(sideInterval)
-                make.bottom.equalTo(self.snp.bottom).offset(-sideInterval)
-            })
-        case .inRight:
-            view.snp.makeConstraints({ (make) in
-                make.right.equalTo(self.snp.right).offset(-interval)
-                if let width = width {
-                    make.width.equalTo(width)
-                }
-                make.top.equalTo(self.snp.top).offset(sideInterval)
-                make.bottom.equalTo(self.snp.bottom).offset(-sideInterval)
-            })
-        case .inBottom:
-            view.snp.makeConstraints({ (make) in
-                make.bottom.equalTo(self.snp.bottom).offset(-interval)
-                if let width = width {
-                    make.height.equalTo(width)
-                }
-                make.left.equalTo(self.snp.left).offset(sideInterval)
-                make.right.equalTo(self.snp.right).offset(-sideInterval)
-            })
-        case .outTop:
-            view.snp.makeConstraints({ (make) in
-                make.bottom.equalTo(self.snp.top).offset(-interval)
-                if let width = width {
-                    make.height.equalTo(width)
-                }
-                make.left.equalTo(self.snp.left).offset(sideInterval)
-                make.right.equalTo(self.snp.right).offset(-sideInterval)
-            })
-        case .outLeft:
-            view.snp.makeConstraints({ (make) in
-                make.right.equalTo(self.snp.left).offset(-interval)
-                if let width = width {
-                    make.width.equalTo(width)
-                }
-                make.top.equalTo(self.snp.top).offset(sideInterval)
-                make.bottom.equalTo(self.snp.bottom).offset(-sideInterval)
-            })
-        case .outRight:
-            view.snp.makeConstraints({ (make) in
-                make.left.equalTo(self.snp.right).offset(interval)
-                if let width = width {
-                    make.width.equalTo(width)
-                }
-                make.top.equalTo(self.snp.top).offset(sideInterval)
-                make.bottom.equalTo(self.snp.bottom).offset(-sideInterval)
-            })
-        case .outBottom:
-            view.snp.makeConstraints({ (make) in
-                make.top.equalTo(self.snp.bottom).offset(interval)
-                if let width = width {
-                    make.height.equalTo(width)
-                }
-                make.left.equalTo(self.snp.left).offset(sideInterval)
-                make.right.equalTo(self.snp.right).offset(-sideInterval)
-            })
-        }
+                make.top.equalTo(yb_snp.top).offset(sideInterval)
+                make.bottom.equalTo(yb_snp.bottom).offset(-sideInterval)
+            }
+            // 设置位置
+            switch duration {
+            case .inTop:
+                make.top.equalTo(yb_snp.top).offset(interval)
+            case .inLeft:
+                make.left.equalTo(yb_snp.left).offset(interval)
+            case .inRight:
+                make.right.equalTo(yb_snp.right).offset(-interval)
+            case .inBottom:
+                make.bottom.equalTo(yb_snp.bottom).offset(-interval)
+            case .outTop:
+                make.bottom.equalTo(yb_snp.top).offset(-interval)
+            case .outLeft:
+                make.right.equalTo(yb_snp.left).offset(-interval)
+            case .outRight:
+                make.left.equalTo(yb_snp.right).offset(interval)
+            case .outBottom:
+                make.top.equalTo(yb_snp.bottom).offset(interval)
+            }
+        })
     }
     
     
@@ -518,12 +519,16 @@ extension UIView {
     ///   - view: 需要布局的试图
     ///   - size: 需要布局试图的大小
     ///   - offset: 需要布局试图的偏移
+    ///   - Parameter isSafeArea: 是否需要安全区域
     ///   - isAdd: 是否添加到参照试图(默认添加)
-    func yb_center(view: UIView, size: yb_layoutSize? = nil, offset: yb_layoutOffset = yb_layoutOffset(), isAdd: Bool = true) {
+    func yb_center(view: UIView, size: yb_layoutSize? = nil, offset: yb_layoutOffset = yb_layoutOffset(), isSafeArea: Bool = true, isAdd: Bool = true) {
         addToSuperView(view: view, isAdd: isAdd)
+        // ================= 根据是否是安全区域获取数据 ==================
+        let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
+        // ===========================================================
         view.snp.makeConstraints { (make) in
-            make.centerX.equalTo(snp.centerX).offset(offset.horizontal)
-            make.centerY.equalTo(snp.centerY).offset(offset.vertical)
+            make.centerX.equalTo(yb_snp.centerX).offset(offset.horizontal)
+            make.centerY.equalTo(yb_snp.centerY).offset(offset.vertical)
         }
         // 设置大小
         view.yb_setSize(size: size)
@@ -537,38 +542,42 @@ extension UIView {
     ///   - duration: 布局方向
     ///   - size: 需要布局试图的大小
     ///   - offset: 需要布局试图的偏移
+    ///   - Parameter isSafeArea: 是否需要安全区域
     ///   - isAdd: 是否添加到参照试图(默认添加)
-    func yb_in(view: UIView, duration: YBLayoutIn, size: yb_layoutSize? = nil, offset: yb_layoutOffset = yb_layoutOffset(), isAdd: Bool = true) {
+    func yb_in(view: UIView, duration: YBLayoutIn, size: yb_layoutSize? = nil, offset: yb_layoutOffset = yb_layoutOffset(), isSafeArea: Bool = true, isAdd: Bool = true) {
         addToSuperView(view: view, isAdd: isAdd)
+        // ================= 根据是否是安全区域获取数据 ==================
+        let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
+        // ===========================================================
         view.snp.makeConstraints { (make) in
             switch duration {
                 case .leftTop:
-                    make.left.equalTo(snp.left).offset(offset.horizontal)
-                    make.top.equalTo(snp.top).offset(offset.vertical)
+                    make.left.equalTo(yb_snp.left).offset(offset.horizontal)
+                    make.top.equalTo(yb_snp.top).offset(offset.vertical)
                 case .leftcenter:
-                    make.left.equalTo(snp.left).offset(offset.horizontal)
-                    make.centerY.equalTo(snp.centerY).offset(offset.vertical)
+                    make.left.equalTo(yb_snp.left).offset(offset.horizontal)
+                    make.centerY.equalTo(yb_snp.centerY).offset(offset.vertical)
                 case .leftBottom:
-                    make.left.equalTo(snp.left).offset(offset.horizontal)
-                    make.bottom.equalTo(snp.bottom).offset(offset.vertical)
+                    make.left.equalTo(yb_snp.left).offset(offset.horizontal)
+                    make.bottom.equalTo(yb_snp.bottom).offset(offset.vertical)
                 case .centerTop:
-                    make.centerX.equalTo(snp.centerX).offset(offset.horizontal)
-                    make.top.equalTo(snp.top).offset(offset.vertical)
+                    make.centerX.equalTo(yb_snp.centerX).offset(offset.horizontal)
+                    make.top.equalTo(yb_snp.top).offset(offset.vertical)
                 case .centerCenter:
-                    make.centerX.equalTo(snp.centerX).offset(offset.horizontal)
-                    make.centerY.equalTo(snp.centerY).offset(offset.vertical)
+                    make.centerX.equalTo(yb_snp.centerX).offset(offset.horizontal)
+                    make.centerY.equalTo(yb_snp.centerY).offset(offset.vertical)
                 case .centerBottom:
-                    make.centerX.equalTo(snp.centerX).offset(offset.horizontal)
-                    make.bottom.equalTo(snp.bottom).offset(offset.vertical)
+                    make.centerX.equalTo(yb_snp.centerX).offset(offset.horizontal)
+                    make.bottom.equalTo(yb_snp.bottom).offset(offset.vertical)
                 case .rightTop:
-                    make.right.equalTo(snp.right).offset(offset.horizontal)
-                    make.top.equalTo(snp.top).offset(offset.vertical)
+                    make.right.equalTo(yb_snp.right).offset(offset.horizontal)
+                    make.top.equalTo(yb_snp.top).offset(offset.vertical)
                 case .rightCenter:
-                    make.right.equalTo(snp.right).offset(offset.horizontal)
-                    make.centerY.equalTo(snp.centerY).offset(offset.vertical)
+                    make.right.equalTo(yb_snp.right).offset(offset.horizontal)
+                    make.centerY.equalTo(yb_snp.centerY).offset(offset.vertical)
                 case .rightBottom:
-                    make.right.equalTo(snp.right).offset(offset.horizontal)
-                    make.bottom.equalTo(snp.bottom).offset(offset.vertical)
+                    make.right.equalTo(yb_snp.right).offset(offset.horizontal)
+                    make.bottom.equalTo(yb_snp.bottom).offset(offset.vertical)
             }
         }
         // 设置大小
@@ -583,59 +592,63 @@ extension UIView {
     ///   - duration: 布局方向
     ///   - size: 需要布局试图的大小
     ///   - offset: 偏移量
+    ///   - Parameter isSafeArea: 是否需要安全区域
     ///   - isAdd: 是否添加到参照试图(默认不添加)
-    func yb_out(view: UIView, duration: YBLayoutOut, size: yb_layoutSize? = nil, offset: yb_layoutOffset = yb_layoutOffset(), isAdd: Bool = false) {
+    func yb_out(view: UIView, duration: YBLayoutOut, size: yb_layoutSize? = nil, offset: yb_layoutOffset = yb_layoutOffset(), isSafeArea: Bool = true, isAdd: Bool = false) {
         addToSuperView(view: view, isAdd: isAdd)
+        // ================= 根据是否是安全区域获取数据 ==================
+        let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
+        // ===========================================================
         view.snp.makeConstraints { (make) in
             switch duration {
                 case .angleLeftTop:
-                    make.right.equalTo(snp.left).offset(offset.horizontal)
-                    make.bottom.equalTo(snp.top).offset(offset.vertical)
+                    make.right.equalTo(yb_snp.left).offset(offset.horizontal)
+                    make.bottom.equalTo(yb_snp.top).offset(offset.vertical)
                 case .angleRightTop:
-                    make.left.equalTo(snp.right).offset(offset.horizontal)
-                    make.bottom.equalTo(snp.top).offset(offset.vertical)
+                    make.left.equalTo(yb_snp.right).offset(offset.horizontal)
+                    make.bottom.equalTo(yb_snp.top).offset(offset.vertical)
                 case .angleLeftBottom:
-                    make.right.equalTo(snp.left).offset(offset.horizontal)
-                    make.top.equalTo(snp.bottom).offset(offset.vertical)
+                    make.right.equalTo(yb_snp.left).offset(offset.horizontal)
+                    make.top.equalTo(yb_snp.bottom).offset(offset.vertical)
                 case .angleRightBottom:
-                    make.left.equalTo(snp.right).offset(offset.horizontal)
-                    make.top.equalTo(snp.bottom).offset(offset.vertical)
+                    make.left.equalTo(yb_snp.right).offset(offset.horizontal)
+                    make.top.equalTo(yb_snp.bottom).offset(offset.vertical)
                 case .topLeft:
-                    make.bottom.equalTo(snp.top).offset(offset.vertical)
-                    make.left.equalTo(snp.left).offset(offset.horizontal)
+                    make.bottom.equalTo(yb_snp.top).offset(offset.vertical)
+                    make.left.equalTo(yb_snp.left).offset(offset.horizontal)
                 case .topCenter:
-                    make.bottom.equalTo(snp.top).offset(offset.vertical)
-                    make.centerX.equalTo(snp.centerX).offset(offset.horizontal)
+                    make.bottom.equalTo(yb_snp.top).offset(offset.vertical)
+                    make.centerX.equalTo(yb_snp.centerX).offset(offset.horizontal)
                 case .topRight:
-                    make.bottom.equalTo(snp.top).offset(offset.vertical)
-                    make.right.equalTo(snp.right).offset(offset.horizontal)
+                    make.bottom.equalTo(yb_snp.top).offset(offset.vertical)
+                    make.right.equalTo(yb_snp.right).offset(offset.horizontal)
                 case .leftTop:
-                    make.right.equalTo(snp.left).offset(offset.horizontal)
-                    make.top.equalTo(snp.top).offset(offset.vertical)
+                    make.right.equalTo(yb_snp.left).offset(offset.horizontal)
+                    make.top.equalTo(yb_snp.top).offset(offset.vertical)
                 case .leftCenter:
-                    make.right.equalTo(snp.left).offset(offset.horizontal)
-                    make.centerY.equalTo(snp.centerY).offset(offset.vertical)
+                    make.right.equalTo(yb_snp.left).offset(offset.horizontal)
+                    make.centerY.equalTo(yb_snp.centerY).offset(offset.vertical)
                 case .leftBottom:
-                    make.right.equalTo(snp.left).offset(offset.horizontal)
-                    make.bottom.equalTo(snp.bottom).offset(offset.vertical)
+                    make.right.equalTo(yb_snp.left).offset(offset.horizontal)
+                    make.bottom.equalTo(yb_snp.bottom).offset(offset.vertical)
                 case .rightTop:
-                    make.left.equalTo(snp.right).offset(offset.horizontal)
-                    make.top.equalTo(snp.top).offset(offset.vertical)
+                    make.left.equalTo(yb_snp.right).offset(offset.horizontal)
+                    make.top.equalTo(yb_snp.top).offset(offset.vertical)
                 case .rightCenter:
-                    make.left.equalTo(snp.right).offset(offset.horizontal)
-                    make.centerY.equalTo(snp.centerY).offset(offset.vertical)
+                    make.left.equalTo(yb_snp.right).offset(offset.horizontal)
+                    make.centerY.equalTo(yb_snp.centerY).offset(offset.vertical)
                 case .rightBottom:
-                    make.left.equalTo(snp.right).offset(offset.horizontal)
-                    make.bottom.equalTo(snp.bottom).offset(offset.vertical)
+                    make.left.equalTo(yb_snp.right).offset(offset.horizontal)
+                    make.bottom.equalTo(yb_snp.bottom).offset(offset.vertical)
                 case .bottomLeft:
-                    make.top.equalTo(snp.bottom).offset(offset.vertical)
-                    make.left.equalTo(snp.left).offset(offset.horizontal)
+                    make.top.equalTo(yb_snp.bottom).offset(offset.vertical)
+                    make.left.equalTo(yb_snp.left).offset(offset.horizontal)
                 case .bottomCenter:
-                    make.top.equalTo(snp.bottom).offset(offset.vertical)
-                    make.centerX.equalTo(snp.centerX).offset(offset.horizontal)
+                    make.top.equalTo(yb_snp.bottom).offset(offset.vertical)
+                    make.centerX.equalTo(yb_snp.centerX).offset(offset.horizontal)
                 case .bottomRight:
-                    make.top.equalTo(snp.bottom).offset(offset.vertical)
-                    make.right.equalTo(snp.right).offset(offset.horizontal)
+                    make.top.equalTo(yb_snp.bottom).offset(offset.vertical)
+                    make.right.equalTo(yb_snp.right).offset(offset.horizontal)
             }
         }
         // 设置大小
@@ -649,11 +662,15 @@ extension UIView {
     /// - Parameters:
     ///   - views: 需要布局的试图
     ///   - duration: 布局方向
-    func yb_equal(views: [UIView], duration: YBLayoutEqual) {
+    ///   - Parameter isSafeArea: 是否需要安全区域
+    func yb_equal(views: [UIView], duration: YBLayoutEqual, isSafeArea: Bool = true) {
         // 判断试图是否添加到父试图
         guard superview != nil else {
             assert(false, "self 必须添加到父试图, 才可以使用布局")
         }
+        // ================= 根据是否是安全区域获取数据 ==================
+        let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
+        // ===========================================================
         for itemView in views {
             guard itemView.superview != nil else {
                 assert(false, "需要布局的试图 必须添加到父试图, 才可以使用布局")
@@ -661,27 +678,27 @@ extension UIView {
             itemView.snp.makeConstraints({ (make) in
                 switch duration {
                 case .width:
-                    make.width.equalTo(self)
+                    make.width.equalTo(yb_snp.width)
                 case .height:
-                    make.height.equalTo(self)
+                    make.height.equalTo(yb_snp.height)
                 case .size:
-                    make.width.equalTo(self)
-                    make.height.equalTo(self)
+                    make.width.equalTo(yb_snp.width)
+                    make.height.equalTo(yb_snp.height)
                 case .centerX:
-                    make.centerX.equalTo(self)
+                    make.centerX.equalTo(yb_snp.centerX)
                 case .centerY:
-                    make.centerY.equalTo(self)
+                    make.centerY.equalTo(yb_snp.centerY)
                 case .center:
-                    make.centerX.equalTo(self)
-                    make.centerY.equalTo(self)
+                    make.centerX.equalTo(yb_snp.centerX)
+                    make.centerY.equalTo(yb_snp.centerY)
                 case .top:
-                    make.top.equalTo(self)
+                    make.top.equalTo(yb_snp.top)
                 case .left:
-                    make.left.equalTo(self)
+                    make.left.equalTo(yb_snp.left)
                 case .right:
-                    make.right.equalTo(self)
+                    make.right.equalTo(yb_snp.right)
                 case .bottom:
-                    make.bottom.equalTo(self)
+                    make.bottom.equalTo(yb_snp.bottom)
                 }
             })
         }
@@ -693,34 +710,35 @@ extension UIView {
     /// - Parameters:
     ///   - views: 需要布局的试图
     ///   - duration: 布局方向
-    class func yb_equalSize(views: [UIView], size: yb_layoutSize) {
+    ///   - Parameter isSafeArea: 是否需要安全区域
+    class func yb_equalSize(views: [UIView], size: yb_layoutSize, isSafeArea: Bool = true) {
         for itemView in views {
-            itemView.yb_setSize(size: size)
+            itemView.yb_setSize(size: size, isSafeArea: isSafeArea)
         }
     }
     
     /// 设置试图大小(如果传的值小于0 就不会设置)
     ///
     /// - Parameter size: 试图大小
-    func yb_setSize(size: yb_layoutSize?) {
+    func yb_setSize(size: yb_layoutSize?, isSafeArea: Bool = true) {
         guard let superView = superview else {
             assert(false, "需要布局的试图 必须添加到父试图, 才可以使用布局")
             return
         }
         snp.makeConstraints { (make) in
             if let width = size?.width {
-//                if width > 0 {
+                if width >= 0 {
                     make.width.equalTo(width)
-//                } else {
-//                    make.width.equalTo(superView).offset(width)
-//                }
+                } else {
+                    make.width.equalTo(isSafeArea ? superView : superView.safeAreaLayoutGuide)
+                }
             }
             if let height = size?.height {
-//                if height > 0 {
+                if height >= 0 {
                     make.height.equalTo(height)
-//                } else {
-//                    make.height.equalTo(superView).offset(height)
-//                }
+                } else {
+                    make.height.equalTo(isSafeArea ? superView : superView.safeAreaLayoutGuide)
+                }
             }
         }
     }

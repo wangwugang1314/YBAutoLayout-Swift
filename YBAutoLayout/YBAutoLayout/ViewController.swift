@@ -27,7 +27,8 @@ class ViewController: UITableViewController {
                                YBCellModel(title: "12. 父试图宽度根据子试图X最大值自动设置"),
                                YBCellModel(title: "13. scrollView内容高度自动设置"),
                                YBCellModel(title: "14. scrollView内容宽度自动设置"),
-                               YBCellModel(title: "15. cell高度自适应并且缓存高度")]
+                               YBCellModel(title: "15. cell高度自适应并且缓存高度"),
+                               YBCellModel(title: "16. 测试")]
 
     override func viewDidLoad() {
         super.viewDidLoad()
