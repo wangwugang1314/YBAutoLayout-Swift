@@ -9,6 +9,8 @@
 import UIKit
 
 class YBController_16: UIViewController {
+    
+    var xView: UIView?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -18,17 +20,18 @@ class YBController_16: UIViewController {
         let view_super = UIView()
         view_super.backgroundColor = UIColor.yb_random
         
-        view.yb_fill(view: view_super)
+        view.yb_in(view: view_super, duration: .leftTop, size: yb_layoutSize(size: 100), offset: yb_layoutOffset(size: 10))
+        xView = view_super
         
-        let view_0 = UIView()
-        view_0.backgroundColor = UIColor.yb_random
-        view.addSubview(view_0)
-        
-        view_0.snp.makeConstraints { (make) in
-            make.top.left.equalTo(view)
-            make.size.equalTo(view.safeAreaLayoutGuide)
-        }
-        
-        
+        let btn = UIButton()
+        btn.backgroundColor = UIColor.yb_random
+        view.yb_in(view: btn, duration: .leftBottom, size: yb_layoutSize(size: 100), offset: yb_layoutOffset(size: 10))
+        btn.addTarget(self, action: #selector(btnClick), for: .touchUpInside)
+    }
+    
+    @objc func btnClick() {
+        let con = xView?.yb_getLayout(type: .height)
+        print(con?.constant)
+        con?.constant += 10
     }
 }

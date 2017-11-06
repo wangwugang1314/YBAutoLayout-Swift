@@ -25,7 +25,7 @@ class YBController_6: YBBaseController {
         tableHeaderView.yb_center(view: superView, size: yb_layoutSize(size: 250))
         
         tableHeaderView.yb_center(view: view_00,
-                                  size: yb_layoutSize(width: 100, height: 200),
+                                  size: yb_layoutSize(width: 100, height: 100),
                                   offset: yb_layoutOffset(horizontal: 10, vertical: 20),
                                   isAdd: true)
     }

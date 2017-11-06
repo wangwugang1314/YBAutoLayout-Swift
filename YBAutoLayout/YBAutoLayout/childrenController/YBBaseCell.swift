@@ -33,11 +33,27 @@ class YBBaseCell: UITableViewCell {
     lazy var showLabel: UILabel = {
         let label = UILabel()
         label.numberOfLines = 0
+        label.backgroundColor = UIColor.orange
         return label
     }()
     
     // MARK: - 准备UI
     fileprivate func prepareUI() {
-        contentView.yb_alignment(view: showLabel, duration: .inTop, interval: 8, sideInterval: 20)
+        if #available(iOS 11.0, *) {
+            contentView.directionalLayoutMargins.leading = 100
+            showLabel.directionalLayoutMargins.leading = 100
+            showLabel.translatesAutoresizingMaskIntoConstraints = false
+        } else {
+            // Fallback on earlier versions
+        }
+        
+        contentView.addSubview(showLabel)
+        
+        contentView.addConstraint(NSLayoutConstraint(item: showLabel, attribute: .top, relatedBy: .equal, toItem: contentView, attribute: .top, multiplier: 1, constant: 8))
+        contentView.addConstraint(NSLayoutConstraint(item: showLabel, attribute: .left, relatedBy: .equal, toItem: contentView, attribute: .left, multiplier: 1, constant: 8))
+        contentView.addConstraint(NSLayoutConstraint(item: showLabel, attribute: .right, relatedBy: .equal, toItem: contentView, attribute: .right, multiplier: 1, constant: -8))
+        
+//        contentView.yb_alignment(view: showLabel, duration: .inTop, interval: 8, sideInterval: 20)
+        
     }
 }

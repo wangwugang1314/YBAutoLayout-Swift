@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import SnapKit
 
 class YBController_14: YBBaseController {
     
@@ -37,7 +38,13 @@ class YBController_14: YBBaseController {
         label.backgroundColor = UIColor.gray
         label.text = dataStr
         
-        scrollView.yb_in(view: label, duration: .leftcenter, size: yb_layoutSize(height: 200))
+//        scrollView.addSubview(label)
+//        label.translatesAutoresizingMaskIntoConstraints = false
+//        scrollView.addConstraint(NSLayoutConstraint(item: label, attribute: .left, relatedBy: .equal, toItem: scrollView, attribute: .left, multiplier: 1, constant: 0))
+//        scrollView.addConstraint(NSLayoutConstraint(item: label, attribute: .top, relatedBy: .equal, toItem: scrollView, attribute: .top, multiplier: 1, constant: 0))
+        
+        
+        scrollView.yb_in(view: label, duration: .leftTop, isSafeArea: false, isAdd: true)
         scrollView.yb_setupAutoContentSize(rightView: label, rightMargin: 10)
     }
     

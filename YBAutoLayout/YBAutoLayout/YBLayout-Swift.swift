@@ -6,8 +6,6 @@
 //
 
 import UIKit
-import SnapKit
-
 
 /// 布局方向
 ///
@@ -52,7 +50,7 @@ enum YBLayoutAlignment {
 /// - rightBottom: 右边-下边
 enum YBLayoutIn {
     case leftTop
-    case leftcenter
+    case leftCenter
     case leftBottom
     case centerTop
     case centerCenter
@@ -224,20 +222,23 @@ struct yb_layoutEdgeInsets {
     }
 }
 
+
+// MARK: - 私有方法
 extension UIView {
-    
-    // MARK: - 私有方法
     
     /// 添加到父试图
     ///
     /// - Parameters:
     ///   - view: 子试图
     ///   - isAdd: 是否添加
-    private func addToSuperView(view: UIView, isAdd: Bool) {
-        let addSuperView = view.superview
+    /// - Returns: 返回父试图
+    fileprivate func addToSuperView(subView: UIView, isAdd: Bool) -> UIView {
+        let addSuperView = subView.superview
+        // 禁止Autoresizing
+        subView.translatesAutoresizingMaskIntoConstraints = false
         if isAdd {
             if addSuperView == nil {
-                addSubview(view)
+                addSubview(subView)
             } else if addSuperView == self {
                 print("已经添加到当前试图，已经忽略重复添加动作")
             } else {
@@ -248,23 +249,63 @@ extension UIView {
                 assert(false, "试图必须添加到父试图才能进行约束")
             }
         }
+        // 这个理一定是添加到父试图上的
+        return subView.superview!
     }
     
-    /// 根据是否是安全区域返回snp
+    /// 根据是否是安全区域返回view
     ///
     /// - Parameter isSafeArea: 是否需要安全区域
-    /// - Returns: 返回的snp
-    private func yb_snp(isSafeArea: Bool) -> ConstraintAttributesDSL {
+    /// - Returns: 返回的view
+    private func yb_layoutView(isSafeArea: Bool) -> Any {
         if #available(iOS 11.0, *) {
-            let safeAreaDSL: ConstraintAttributesDSL = self.safeAreaLayoutGuide.snp
-            let viewDSL: ConstraintAttributesDSL = self.snp
-            return isSafeArea ? safeAreaDSL : viewDSL
+            return isSafeArea ? self.safeAreaLayoutGuide : self
         } else {
-            return self.snp
+            return self
         }
     }
+}
+
+// MARK: - 平铺
+extension UIView {
     
-    // MARK: - 整个约束布局
+    /// 单个子试图平铺
+    ///
+    /// - Parameters:
+    ///   - view: 子试图
+    ///   - edge: 子试图与父试图的边距
+    ///   - isSafeArea: 是否是安全区域
+    ///   - isAdd: 是否添加到父试图(默认添加)
+    func yb_fill(view: UIView, edge: yb_layoutEdgeInsets = yb_layoutEdgeInsets(), isSafeArea: Bool = false, isAdd: Bool = true) {
+        let superView = addToSuperView(subView: view, isAdd: isAdd)
+        // ================= 根据是否是安全区域获取数据 ==================
+        let yb_layoutView = self.yb_layoutView(isSafeArea: isSafeArea)
+        // ===========================================================
+        superView.yb_addConstraint(type: .left,
+                                   item: view,
+                                   attribute: .left,
+                                   toItem: yb_layoutView,
+                                   toAttribute: .left,
+                                   constant: edge.left)
+        superView.yb_addConstraint(type: .top,
+                                   item: view,
+                                   attribute: .top,
+                                   toItem: yb_layoutView,
+                                   toAttribute: .top,
+                                   constant: edge.top)
+        superView.yb_addConstraint(type: .right,
+                                   item: view,
+                                   attribute: .right,
+                                   toItem: yb_layoutView,
+                                   toAttribute: .right,
+                                   constant: -edge.right)
+        superView.yb_addConstraint(type: .bottom,
+                                   item: view,
+                                   attribute: .bottom,
+                                   toItem: yb_layoutView,
+                                   toAttribute: .bottom,
+                                   constant: -edge.bottom)
+    }
     
     /// 多个子试图平铺布局
     ///
@@ -274,52 +315,114 @@ extension UIView {
     ///   - duration: 平铺方向
     ///   - edge: 子试图与俯视图的边距(默认添加)
     ///   - isSafeArea: 是否是安全区域
-    func yb_fill(views: [UIView], interval: CGFloat = 0, duration: YBLayoutDuration = .horizon, edge: yb_layoutEdgeInsets = yb_layoutEdgeInsets(), isSafeArea: Bool = true) {
+    func yb_fill(views: [UIView], interval: CGFloat = 0, duration: YBLayoutDuration = .horizon, edge: yb_layoutEdgeInsets = yb_layoutEdgeInsets(), isSafeArea: Bool = false) {
         if views.count == 1 {
             yb_fill(view: views[0], edge: edge, isSafeArea: isSafeArea, isAdd: true)
         } else {
-            
             // ================= 根据是否是安全区域获取数据 ==================
-            let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
+            let yb_layoutView = self.yb_layoutView(isSafeArea: isSafeArea)
             // ===========================================================
-            
             // 设置
             for (index, view) in views.enumerated() {
-                addSubview(view)
+                let superView = addToSuperView(subView: view, isAdd: true)
                 if duration == .horizon {
-                    view.snp.makeConstraints({ (make) in
-                        if index == 0 {
-                            make.left.equalTo(yb_snp.left).offset(edge.left)
-                        } else if index == views.count - 1 {
-                            make.right.equalTo(yb_snp.right).offset(-edge.right)
-                            make.left.equalTo(views[index - 1].snp.right).offset(interval)
-                            make.width.equalTo(views.first!)
-                        } else {
-                            make.left.equalTo(views[index - 1].snp.right).offset(interval)
-                            make.width.equalTo(views.first!)
+                    if index == 0 {
+                        superView.yb_addConstraint(type: .left,
+                                                   item: view,
+                                                   attribute: .left,
+                                                   toItem: yb_layoutView,
+                                                   toAttribute: .left,
+                                                   constant: edge.left)
+                    } else {
+                        let beforeView = views[index - 1]
+                        let firstView = views.first!
+                        if index == views.count - 1 {
+                            superView.yb_addConstraint(type: .right,
+                                                   item: view,
+                                                   attribute: .right,
+                                                   toItem: yb_layoutView,
+                                                   toAttribute: .right,
+                                                   constant: -edge.right)
                         }
-                        make.top.equalTo(yb_snp.top).offset(edge.top)
-                        make.bottom.equalTo(yb_snp.bottom).offset(-edge.bottom)
-                    })
+                        superView.yb_addConstraint(type: .left,
+                                                   item: view,
+                                                   attribute: .left,
+                                                   toItem: beforeView,
+                                                   toAttribute: .right,
+                                                   constant: interval)
+                        superView.yb_addConstraint(type: .width,
+                                                   item: view,
+                                                   attribute: .width,
+                                                   toItem: firstView,
+                                                   toAttribute: .width,
+                                                   constant: 0)
+                    }
+                    superView.yb_addConstraint(type: .top,
+                                                   item: view,
+                                                   attribute: .top,
+                                                   toItem: yb_layoutView,
+                                                   toAttribute: .top,
+                                                   constant: edge.top)
+                    superView.yb_addConstraint(type: .bottom,
+                                                   item: view,
+                                                   attribute: .bottom,
+                                                   toItem: yb_layoutView,
+                                                   toAttribute: .bottom,
+                                                   constant: -edge.bottom)
                 } else {
-                    view.snp.makeConstraints({ (make) in
-                        if index == 0 {
-                            make.top.equalTo(yb_snp.top).offset(edge.top)
-                        } else if index == views.count - 1 {
-                            make.bottom.equalTo(yb_snp.bottom).offset(-edge.bottom)
-                            make.top.equalTo(views[index - 1].snp.bottom).offset(interval)
-                            make.height.equalTo(views.first!)
-                        } else {
-                            make.top.equalTo(views[index - 1].snp.bottom).offset(interval)
-                            make.height.equalTo(views.first!)
+                    if index == 0 {
+                        superView.yb_addConstraint(type: .top,
+                                                   item: view,
+                                                   attribute: .top,
+                                                   toItem: yb_layoutView,
+                                                   toAttribute: .top,
+                                                   constant: edge.top)
+                    } else {
+                        let beforeView = views[index - 1]
+                        let firstView = views.first!
+                        if index == views.count - 1 {
+                            superView.yb_addConstraint(type: .bottom,
+                                                   item: view,
+                                                   attribute: .bottom,
+                                                   toItem: yb_layoutView,
+                                                   toAttribute: .bottom,
+                                                   constant: -edge.bottom)
                         }
-                        make.left.equalTo(yb_snp.left).offset(edge.left)
-                        make.right.equalTo(yb_snp.right).offset(-edge.right)
-                    })
+                        superView.yb_addConstraint(type: .top,
+                                                   item: view,
+                                                   attribute: .top,
+                                                   toItem: beforeView,
+                                                   toAttribute: .bottom,
+                                                   constant: interval)
+                        superView.yb_addConstraint(type: .height,
+                                                   item: view,
+                                                   attribute: .height,
+                                                   toItem: firstView,
+                                                   toAttribute: .height,
+                                                   constant: 0)
+                    }
+                    superView.yb_addConstraint(type: .left,
+                                                   item: view,
+                                                   attribute: .left,
+                                                   toItem: yb_layoutView,
+                                                   toAttribute: .left,
+                                                   constant: edge.left)
+                    superView.yb_addConstraint(type: .right,
+                                                   item: view,
+                                                   attribute: .right,
+                                                   toItem: yb_layoutView,
+                                                   toAttribute: .right,
+                                                   constant: -edge.right)
+                    
                 }
             }
         }
     }
+    
+}
+
+// MARK: - 填充
+extension UIView {
     
     /// 填充(地板砖一样平铺，不会再安全区域设置)
     ///
@@ -442,26 +545,10 @@ extension UIView {
         }
         bgView.yb_tile(views: views, direction: direction, interval: interval, cellInViews: cellInViews, edge: inEdit)
     }
-    
-    /// 单个子试图平铺
-    ///
-    /// - Parameters:
-    ///   - view: 子试图
-    ///   - edge: 子试图与父试图的边距
-    ///   - isSafeArea: 是否是安全区域
-    ///   - isAdd: 是否添加到父试图(默认添加)
-    func yb_fill(view: UIView, edge: yb_layoutEdgeInsets = yb_layoutEdgeInsets(), isSafeArea: Bool = true, isAdd: Bool = true) {
-        addToSuperView(view: view, isAdd: isAdd)
-        // ================= 根据是否是安全区域获取数据 ==================
-        let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
-        // ===========================================================
-        view.snp.makeConstraints { (make) in
-            make.left.equalTo(yb_snp.left).offset(edge.left)
-            make.top.equalTo(yb_snp.top).offset(edge.top)
-            make.right.equalTo(yb_snp.right).offset(-edge.right)
-            make.bottom.equalTo(yb_snp.bottom).offset(-edge.bottom)
-        }
-    }
+}
+
+// MARK: - 基本布局
+extension UIView {
     
     /// 对齐布局(self: 参照试图)
     ///
@@ -473,47 +560,115 @@ extension UIView {
     ///   - sideInterval: 布局试图与参照试图的边距
     ///   - Parameter isSafeArea: 是否需要安全区域
     ///   - isAdd: 是否添加到参照试图上(默认添加)
-    func yb_alignment(view: UIView, duration: YBLayoutAlignment, width: CGFloat? = nil, interval: CGFloat = 0, sideInterval: CGFloat = 0, isSafeArea: Bool = true, isAdd: Bool = true) {
-        addToSuperView(view: view, isAdd: isAdd)
+    func yb_alignment(view: UIView, duration: YBLayoutAlignment, width: CGFloat? = nil, interval: CGFloat = 0, sideInterval: CGFloat = 0, isSafeArea: Bool = false, isAdd: Bool = true) {
+        let superView = addToSuperView(subView: view, isAdd: isAdd)
         // ================= 根据是否是安全区域获取数据 ==================
-        let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
+        let yb_layoutView = self.yb_layoutView(isSafeArea: isSafeArea)
         // ===========================================================
-        view.snp.makeConstraints({ (make) in
-            // 设置宽度与边距
-            switch duration {
-            case .inTop, .inBottom, .outTop, .outBottom:
-                if let width = width {
-                    make.height.equalTo(width)
-                }
-                make.left.equalTo(yb_snp.left).offset(sideInterval)
-                make.right.equalTo(yb_snp.right).offset(-sideInterval)
-            default:
-                if let width = width {
-                    make.width.equalTo(width)
-                }
-                make.top.equalTo(yb_snp.top).offset(sideInterval)
-                make.bottom.equalTo(yb_snp.bottom).offset(-sideInterval)
+        // 设置宽度与边距
+        switch duration {
+        case .inTop, .inBottom, .outTop, .outBottom:
+            if let width = width {
+                superView.yb_addConstraint(type: .height,
+                                           item: view,
+                                           attribute: .height,
+                                           toItem: nil,
+                                           toAttribute: .height,
+                                           constant: width)
             }
-            // 设置位置
-            switch duration {
-            case .inTop:
-                make.top.equalTo(yb_snp.top).offset(interval)
-            case .inLeft:
-                make.left.equalTo(yb_snp.left).offset(interval)
-            case .inRight:
-                make.right.equalTo(yb_snp.right).offset(-interval)
-            case .inBottom:
-                make.bottom.equalTo(yb_snp.bottom).offset(-interval)
-            case .outTop:
-                make.bottom.equalTo(yb_snp.top).offset(-interval)
-            case .outLeft:
-                make.right.equalTo(yb_snp.left).offset(-interval)
-            case .outRight:
-                make.left.equalTo(yb_snp.right).offset(interval)
-            case .outBottom:
-                make.top.equalTo(yb_snp.bottom).offset(interval)
+            superView.yb_addConstraint(type: .left,
+                                           item: view,
+                                           attribute: .left,
+                                           toItem: yb_layoutView,
+                                           toAttribute: .left,
+                                           constant: sideInterval)
+            superView.yb_addConstraint(type: .right,
+                                           item: view,
+                                           attribute: .right,
+                                           toItem: yb_layoutView,
+                                           toAttribute: .right,
+                                           constant: -sideInterval)
+        default:
+            if let width = width {
+                superView.yb_addConstraint(type: .width,
+                                           item: view,
+                                           attribute: .width,
+                                           toItem: nil,
+                                           toAttribute: .width,
+                                           constant: width)
             }
-        })
+            superView.yb_addConstraint(type: .top,
+                                           item: view,
+                                           attribute: .top,
+                                           toItem: yb_layoutView,
+                                           toAttribute: .top,
+                                           constant: sideInterval)
+            superView.yb_addConstraint(type: .bottom,
+                                           item: view,
+                                           attribute: .bottom,
+                                           toItem: yb_layoutView,
+                                           toAttribute: .bottom,
+                                           constant: -sideInterval)
+        }
+        // 设置位置
+        switch duration {
+        case .inTop:
+            superView.yb_addConstraint(type: .top,
+                                           item: view,
+                                           attribute: .top,
+                                           toItem: yb_layoutView,
+                                           toAttribute: .top,
+                                           constant: interval)
+        case .inLeft:
+            superView.yb_addConstraint(type: .left,
+                                           item: view,
+                                           attribute: .left,
+                                           toItem: yb_layoutView,
+                                           toAttribute: .left,
+                                           constant: interval)
+        case .inRight:
+            superView.yb_addConstraint(type: .right,
+                                           item: view,
+                                           attribute: .right,
+                                           toItem: yb_layoutView,
+                                           toAttribute: .right,
+                                           constant: -interval)
+        case .inBottom:
+            superView.yb_addConstraint(type: .bottom,
+                                           item: view,
+                                           attribute: .bottom,
+                                           toItem: yb_layoutView,
+                                           toAttribute: .bottom,
+                                           constant: -interval)
+        case .outTop:
+            superView.yb_addConstraint(type: .bottom,
+                                           item: view,
+                                           attribute: .bottom,
+                                           toItem: yb_layoutView,
+                                           toAttribute: .top,
+                                           constant: -interval)
+        case .outLeft:
+            superView.yb_addConstraint(type: .right,
+                                           item: view,
+                                           attribute: .right,
+                                           toItem: yb_layoutView,
+                                           toAttribute: .left,
+                                           constant: -interval)
+        case .outRight:
+            superView.yb_addConstraint(type: .left,
+                                           item: view,
+                                           attribute: .left,
+                                           toItem: yb_layoutView,
+                                           toAttribute: .right,
+                                           constant: interval)
+        case .outBottom:
+            superView.yb_addConstraint(type: .top,
+                                           item: view,
+                                           attribute: .top,
+                                           toItem: yb_layoutView,
+                                           toAttribute: .bottom,
+                                           constant: interval)
+        }
     }
     
     
@@ -525,15 +680,13 @@ extension UIView {
     ///   - offset: 需要布局试图的偏移
     ///   - Parameter isSafeArea: 是否需要安全区域
     ///   - isAdd: 是否添加到参照试图(默认添加)
-    func yb_center(view: UIView, size: yb_layoutSize? = nil, offset: yb_layoutOffset = yb_layoutOffset(), isSafeArea: Bool = true, isAdd: Bool = true) {
-        addToSuperView(view: view, isAdd: isAdd)
+    func yb_center(view: UIView, size: yb_layoutSize? = nil, offset: yb_layoutOffset = yb_layoutOffset(), isSafeArea: Bool = false, isAdd: Bool = true) {
+        let superView = addToSuperView(subView: view, isAdd: isAdd)
         // ================= 根据是否是安全区域获取数据 ==================
-        let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
+        let yb_layoutView = self.yb_layoutView(isSafeArea: isSafeArea)
         // ===========================================================
-        view.snp.makeConstraints { (make) in
-            make.centerX.equalTo(yb_snp.centerX).offset(offset.horizontal)
-            make.centerY.equalTo(yb_snp.centerY).offset(offset.vertical)
-        }
+        superView.yb_addConstraint(type: .centerX, item: view, attribute: .centerX, toItem: yb_layoutView, toAttribute: .centerX, constant: offset.horizontal)
+        superView.yb_addConstraint(type: .centerY, item: view, attribute: .centerY, toItem: yb_layoutView, toAttribute: .centerY, constant: offset.vertical)
         // 设置大小
         view.yb_setSize(size: size)
     }
@@ -548,41 +701,129 @@ extension UIView {
     ///   - offset: 需要布局试图的偏移
     ///   - Parameter isSafeArea: 是否需要安全区域
     ///   - isAdd: 是否添加到参照试图(默认添加)
-    func yb_in(view: UIView, duration: YBLayoutIn, size: yb_layoutSize? = nil, offset: yb_layoutOffset = yb_layoutOffset(), isSafeArea: Bool = true, isAdd: Bool = true) {
-        addToSuperView(view: view, isAdd: isAdd)
+    func yb_in(view: UIView, duration: YBLayoutIn, size: yb_layoutSize? = nil, offset: yb_layoutOffset = yb_layoutOffset(), isSafeArea: Bool = false, isAdd: Bool = true) {
+        let superView = addToSuperView(subView: view, isAdd: isAdd)
         // ================= 根据是否是安全区域获取数据 ==================
-        let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
+        let yb_layoutView = self.yb_layoutView(isSafeArea: isSafeArea)
         // ===========================================================
-        view.snp.makeConstraints { (make) in
-            switch duration {
-                case .leftTop:
-                    make.left.equalTo(yb_snp.left).offset(offset.horizontal)
-                    make.top.equalTo(yb_snp.top).offset(offset.vertical)
-                case .leftcenter:
-                    make.left.equalTo(yb_snp.left).offset(offset.horizontal)
-                    make.centerY.equalTo(yb_snp.centerY).offset(offset.vertical)
-                case .leftBottom:
-                    make.left.equalTo(yb_snp.left).offset(offset.horizontal)
-                    make.bottom.equalTo(yb_snp.bottom).offset(offset.vertical)
-                case .centerTop:
-                    make.centerX.equalTo(yb_snp.centerX).offset(offset.horizontal)
-                    make.top.equalTo(yb_snp.top).offset(offset.vertical)
-                case .centerCenter:
-                    make.centerX.equalTo(yb_snp.centerX).offset(offset.horizontal)
-                    make.centerY.equalTo(yb_snp.centerY).offset(offset.vertical)
-                case .centerBottom:
-                    make.centerX.equalTo(yb_snp.centerX).offset(offset.horizontal)
-                    make.bottom.equalTo(yb_snp.bottom).offset(offset.vertical)
-                case .rightTop:
-                    make.right.equalTo(yb_snp.right).offset(offset.horizontal)
-                    make.top.equalTo(yb_snp.top).offset(offset.vertical)
-                case .rightCenter:
-                    make.right.equalTo(yb_snp.right).offset(offset.horizontal)
-                    make.centerY.equalTo(yb_snp.centerY).offset(offset.vertical)
-                case .rightBottom:
-                    make.right.equalTo(yb_snp.right).offset(offset.horizontal)
-                    make.bottom.equalTo(yb_snp.bottom).offset(offset.vertical)
-            }
+        switch duration {
+        case .leftTop:
+            superView.yb_addConstraint(type: .left,
+                                       item: view,
+                                       attribute: .left,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .left,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .top,
+                                       item: view,
+                                       attribute: .top,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .top,
+                                       constant: offset.vertical)
+        case .leftCenter:
+            superView.yb_addConstraint(type: .left,
+                                       item: view,
+                                       attribute: .left,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .left,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .centerY,
+                                       item: view,
+                                       attribute: .centerY,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .centerY,
+                                       constant: offset.vertical)
+        case .leftBottom:
+            superView.yb_addConstraint(type: .left,
+                                       item: view,
+                                       attribute: .left,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .left,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .bottom,
+                                       item: view,
+                                       attribute: .bottom,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .bottom,
+                                       constant: offset.vertical)
+        case .centerTop:
+            superView.yb_addConstraint(type: .centerX,
+                                       item: view,
+                                       attribute: .centerX,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .centerX,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .top,
+                                       item: view,
+                                       attribute: .top,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .top,
+                                       constant: offset.vertical)
+        case .centerCenter:
+            superView.yb_addConstraint(type: .centerX,
+                                       item: view,
+                                       attribute: .centerX,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .centerX,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .centerY,
+                                       item: view,
+                                       attribute: .centerY,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .centerY,
+                                       constant: offset.vertical)
+        case .centerBottom:
+            superView.yb_addConstraint(type: .centerX,
+                                       item: view,
+                                       attribute: .centerX,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .centerX,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .bottom,
+                                       item: view,
+                                       attribute: .bottom,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .bottom,
+                                       constant: offset.vertical)
+        case .rightTop:
+            superView.yb_addConstraint(type: .right,
+                                       item: view,
+                                       attribute: .right,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .right,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .top,
+                                       item: view,
+                                       attribute: .top,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .top,
+                                       constant: offset.vertical)
+        case .rightCenter:
+            superView.yb_addConstraint(type: .right,
+                                       item: view,
+                                       attribute: .right,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .right,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .centerY,
+                                       item: view,
+                                       attribute: .centerY,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .centerY,
+                                       constant: offset.vertical)
+        case .rightBottom:
+            superView.yb_addConstraint(type: .right,
+                                       item: view,
+                                       attribute: .right,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .right,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .bottom,
+                                       item: view,
+                                       attribute: .bottom,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .bottom,
+                                       constant: offset.vertical)
         }
         // 设置大小
         view.yb_setSize(size: size)
@@ -598,68 +839,229 @@ extension UIView {
     ///   - offset: 偏移量
     ///   - Parameter isSafeArea: 是否需要安全区域
     ///   - isAdd: 是否添加到参照试图(默认不添加)
-    func yb_out(view: UIView, duration: YBLayoutOut, size: yb_layoutSize? = nil, offset: yb_layoutOffset = yb_layoutOffset(), isSafeArea: Bool = true, isAdd: Bool = false) {
-        addToSuperView(view: view, isAdd: isAdd)
+    func yb_out(view: UIView, duration: YBLayoutOut, size: yb_layoutSize? = nil, offset: yb_layoutOffset = yb_layoutOffset(), isSafeArea: Bool = false, isAdd: Bool = false) {
+        let superView = addToSuperView(subView: view, isAdd: isAdd)
         // ================= 根据是否是安全区域获取数据 ==================
-        let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
+        let yb_layoutView = self.yb_layoutView(isSafeArea: isSafeArea)
         // ===========================================================
-        view.snp.makeConstraints { (make) in
-            switch duration {
-                case .angleLeftTop:
-                    make.right.equalTo(yb_snp.left).offset(offset.horizontal)
-                    make.bottom.equalTo(yb_snp.top).offset(offset.vertical)
-                case .angleRightTop:
-                    make.left.equalTo(yb_snp.right).offset(offset.horizontal)
-                    make.bottom.equalTo(yb_snp.top).offset(offset.vertical)
-                case .angleLeftBottom:
-                    make.right.equalTo(yb_snp.left).offset(offset.horizontal)
-                    make.top.equalTo(yb_snp.bottom).offset(offset.vertical)
-                case .angleRightBottom:
-                    make.left.equalTo(yb_snp.right).offset(offset.horizontal)
-                    make.top.equalTo(yb_snp.bottom).offset(offset.vertical)
-                case .topLeft:
-                    make.bottom.equalTo(yb_snp.top).offset(offset.vertical)
-                    make.left.equalTo(yb_snp.left).offset(offset.horizontal)
-                case .topCenter:
-                    make.bottom.equalTo(yb_snp.top).offset(offset.vertical)
-                    make.centerX.equalTo(yb_snp.centerX).offset(offset.horizontal)
-                case .topRight:
-                    make.bottom.equalTo(yb_snp.top).offset(offset.vertical)
-                    make.right.equalTo(yb_snp.right).offset(offset.horizontal)
-                case .leftTop:
-                    make.right.equalTo(yb_snp.left).offset(offset.horizontal)
-                    make.top.equalTo(yb_snp.top).offset(offset.vertical)
-                case .leftCenter:
-                    make.right.equalTo(yb_snp.left).offset(offset.horizontal)
-                    make.centerY.equalTo(yb_snp.centerY).offset(offset.vertical)
-                case .leftBottom:
-                    make.right.equalTo(yb_snp.left).offset(offset.horizontal)
-                    make.bottom.equalTo(yb_snp.bottom).offset(offset.vertical)
-                case .rightTop:
-                    make.left.equalTo(yb_snp.right).offset(offset.horizontal)
-                    make.top.equalTo(yb_snp.top).offset(offset.vertical)
-                case .rightCenter:
-                    make.left.equalTo(yb_snp.right).offset(offset.horizontal)
-                    make.centerY.equalTo(yb_snp.centerY).offset(offset.vertical)
-                case .rightBottom:
-                    make.left.equalTo(yb_snp.right).offset(offset.horizontal)
-                    make.bottom.equalTo(yb_snp.bottom).offset(offset.vertical)
-                case .bottomLeft:
-                    make.top.equalTo(yb_snp.bottom).offset(offset.vertical)
-                    make.left.equalTo(yb_snp.left).offset(offset.horizontal)
-                case .bottomCenter:
-                    make.top.equalTo(yb_snp.bottom).offset(offset.vertical)
-                    make.centerX.equalTo(yb_snp.centerX).offset(offset.horizontal)
-                case .bottomRight:
-                    make.top.equalTo(yb_snp.bottom).offset(offset.vertical)
-                    make.right.equalTo(yb_snp.right).offset(offset.horizontal)
-            }
+        switch duration {
+        case .angleLeftTop:
+            superView.yb_addConstraint(type: .right,
+                                       item: view,
+                                       attribute: .right,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .left,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .bottom,
+                                       item: view,
+                                       attribute: .bottom,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .top,
+                                       constant: offset.vertical)
+        case .angleRightTop:
+            superView.yb_addConstraint(type: .left,
+                                       item: view,
+                                       attribute: .left,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .right,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .bottom,
+                                       item: view,
+                                       attribute: .bottom,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .top,
+                                       constant: offset.vertical)
+        case .angleLeftBottom:
+            superView.yb_addConstraint(type: .right,
+                                       item: view,
+                                       attribute: .right,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .left,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .top,
+                                       item: view,
+                                       attribute: .top,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .bottom,
+                                       constant: offset.vertical)
+        case .angleRightBottom:
+            superView.yb_addConstraint(type: .left,
+                                       item: view,
+                                       attribute: .left,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .right,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .top,
+                                       item: view,
+                                       attribute: .top,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .bottom,
+                                       constant: offset.vertical)
+        case .topLeft:
+            superView.yb_addConstraint(type: .bottom,
+                                       item: view,
+                                       attribute: .bottom,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .top,
+                                       constant: offset.vertical)
+            superView.yb_addConstraint(type: .left,
+                                       item: view,
+                                       attribute: .left,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .left,
+                                       constant: offset.horizontal)
+        case .topCenter:
+            superView.yb_addConstraint(type: .bottom,
+                                       item: view,
+                                       attribute: .bottom,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .top,
+                                       constant: offset.vertical)
+            superView.yb_addConstraint(type: .centerX,
+                                       item: view,
+                                       attribute: .centerX,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .centerX,
+                                       constant: offset.horizontal)
+        case .topRight:
+            superView.yb_addConstraint(type: .bottom,
+                                       item: view,
+                                       attribute: .bottom,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .top,
+                                       constant: offset.vertical)
+            superView.yb_addConstraint(type: .right,
+                                       item: view,
+                                       attribute: .right,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .right,
+                                       constant: offset.horizontal)
+        case .leftTop:
+            superView.yb_addConstraint(type: .right,
+                                       item: view,
+                                       attribute: .right,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .left,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .top,
+                                       item: view,
+                                       attribute: .top,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .top,
+                                       constant: offset.vertical)
+        case .leftCenter:
+            superView.yb_addConstraint(type: .right,
+                                       item: view,
+                                       attribute: .right,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .left,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .centerY,
+                                       item: view,
+                                       attribute: .centerY,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .centerY,
+                                       constant: offset.vertical)
+        case .leftBottom:
+            superView.yb_addConstraint(type: .right,
+                                       item: view,
+                                       attribute: .right,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .left,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .bottom,
+                                       item: view,
+                                       attribute: .bottom,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .bottom,
+                                       constant: offset.vertical)
+        case .rightTop:
+            superView.yb_addConstraint(type: .left,
+                                       item: view,
+                                       attribute: .left,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .right,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .top,
+                                       item: view,
+                                       attribute: .top,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .top,
+                                       constant: offset.vertical)
+        case .rightCenter:
+            superView.yb_addConstraint(type: .left,
+                                       item: view,
+                                       attribute: .left,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .right,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .centerY,
+                                       item: view,
+                                       attribute: .centerY,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .centerY,
+                                       constant: offset.vertical)
+        case .rightBottom:
+            superView.yb_addConstraint(type: .left,
+                                       item: view,
+                                       attribute: .left,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .right,
+                                       constant: offset.horizontal)
+            superView.yb_addConstraint(type: .bottom,
+                                       item: view,
+                                       attribute: .bottom,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .bottom,
+                                       constant: offset.vertical)
+        case .bottomLeft:
+            superView.yb_addConstraint(type: .top,
+                                       item: view,
+                                       attribute: .top,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .bottom,
+                                       constant: offset.vertical)
+            superView.yb_addConstraint(type: .left,
+                                       item: view,
+                                       attribute: .left,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .left,
+                                       constant: offset.horizontal)
+        case .bottomCenter:
+            superView.yb_addConstraint(type: .top,
+                                       item: view,
+                                       attribute: .top,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .bottom,
+                                       constant: offset.vertical)
+            superView.yb_addConstraint(type: .centerX,
+                                       item: view,
+                                       attribute: .centerX,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .centerX,
+                                       constant: offset.horizontal)
+        case .bottomRight:
+            superView.yb_addConstraint(type: .top,
+                                       item: view,
+                                       attribute: .top,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .bottom,
+                                       constant: offset.vertical)
+            superView.yb_addConstraint(type: .right,
+                                       item: view,
+                                       attribute: .right,
+                                       toItem: yb_layoutView,
+                                       toAttribute: .right,
+                                       constant: offset.horizontal)
         }
         // 设置大小
         view.yb_setSize(size: size)
     }
     
-    // MARK: - 部分约束布局
+}
+
+// MARK: - 部分约束布局
+extension UIView {
     
     /// 相等布局（self: 参照的试图 不一定是父试图, 需要手动添加到父试图）所有试图都与 self 进行设置
     ///
@@ -667,47 +1069,101 @@ extension UIView {
     ///   - views: 需要布局的试图
     ///   - duration: 布局方向
     ///   - Parameter isSafeArea: 是否需要安全区域
-    func yb_equal(views: [UIView], duration: YBLayoutEqual, isSafeArea: Bool = true) {
+    func yb_equal(views: [UIView], duration: YBLayoutEqual, isSafeArea: Bool = false) {
         // 判断试图是否添加到父试图
-        guard superview != nil else {
-            assert(false, "self 必须添加到父试图, 才可以使用布局")
-        }
+        let _ = self.yb_superView()
         // ================= 根据是否是安全区域获取数据 ==================
-        let yb_snp = self.yb_snp(isSafeArea: isSafeArea)
+        let yb_layoutView = self.yb_layoutView(isSafeArea: isSafeArea)
         // ===========================================================
         for itemView in views {
-            guard itemView.superview != nil else {
-                assert(false, "需要布局的试图 必须添加到父试图, 才可以使用布局")
+            let _ = self.yb_superView()
+            switch duration {
+            case .width:
+                itemView.superview?.yb_addConstraint(type: .width,
+                                                     item: itemView,
+                                                     attribute: .width,
+                                                     toItem: yb_layoutView,
+                                                     toAttribute: .width,
+                                                     constant: 0)
+            case .height:
+                itemView.superview?.yb_addConstraint(type: .height,
+                                                     item: itemView,
+                                                     attribute: .height,
+                                                     toItem: yb_layoutView,
+                                                     toAttribute: .height,
+                                                     constant: 0)
+            case .size:
+                itemView.superview?.yb_addConstraint(type: .width,
+                                                     item: itemView,
+                                                     attribute: .width,
+                                                     toItem: yb_layoutView,
+                                                     toAttribute: .width,
+                                                     constant: 0)
+                itemView.superview?.yb_addConstraint(type: .height,
+                                                     item: itemView,
+                                                     attribute: .height,
+                                                     toItem: yb_layoutView,
+                                                     toAttribute: .height,
+                                                     constant: 0)
+            case .centerX:
+                itemView.superview?.yb_addConstraint(type: .centerX,
+                                                     item: itemView,
+                                                     attribute: .centerX,
+                                                     toItem: yb_layoutView,
+                                                     toAttribute: .centerX,
+                                                     constant: 0)
+            case .centerY:
+                itemView.superview?.yb_addConstraint(type: .centerY,
+                                                     item: itemView,
+                                                     attribute: .centerY,
+                                                     toItem: yb_layoutView,
+                                                     toAttribute: .centerY,
+                                                     constant: 0)
+            case .center:
+                itemView.superview?.yb_addConstraint(type: .centerX,
+                                                     item: itemView,
+                                                     attribute: .centerX,
+                                                     toItem: yb_layoutView,
+                                                     toAttribute: .centerX,
+                                                     constant: 0)
+                itemView.superview?.yb_addConstraint(type: .centerY,
+                                                     item: itemView,
+                                                     attribute: .centerY,
+                                                     toItem: yb_layoutView,
+                                                     toAttribute: .centerY,
+                                                     constant: 0)
+            case .top:
+                itemView.superview?.yb_addConstraint(type: .top,
+                                                     item: itemView,
+                                                     attribute: .top,
+                                                     toItem: yb_layoutView,
+                                                     toAttribute: .top,
+                                                     constant: 0)
+            case .left:
+                itemView.superview?.yb_addConstraint(type: .left,
+                                                     item: itemView,
+                                                     attribute: .left,
+                                                     toItem: yb_layoutView,
+                                                     toAttribute: .left,
+                                                     constant: 0)
+            case .right:
+                itemView.superview?.yb_addConstraint(type: .right,
+                                                     item: itemView,
+                                                     attribute: .right,
+                                                     toItem: yb_layoutView,
+                                                     toAttribute: .right,
+                                                     constant: 0)
+            case .bottom:
+                itemView.superview?.yb_addConstraint(type: .bottom,
+                                                     item: itemView,
+                                                     attribute: .bottom,
+                                                     toItem: yb_layoutView,
+                                                     toAttribute: .bottom,
+                                                     constant: 0)
             }
-            itemView.snp.makeConstraints({ (make) in
-                switch duration {
-                case .width:
-                    make.width.equalTo(yb_snp.width)
-                case .height:
-                    make.height.equalTo(yb_snp.height)
-                case .size:
-                    make.width.equalTo(yb_snp.width)
-                    make.height.equalTo(yb_snp.height)
-                case .centerX:
-                    make.centerX.equalTo(yb_snp.centerX)
-                case .centerY:
-                    make.centerY.equalTo(yb_snp.centerY)
-                case .center:
-                    make.centerX.equalTo(yb_snp.centerX)
-                    make.centerY.equalTo(yb_snp.centerY)
-                case .top:
-                    make.top.equalTo(yb_snp.top)
-                case .left:
-                    make.left.equalTo(yb_snp.left)
-                case .right:
-                    make.right.equalTo(yb_snp.right)
-                case .bottom:
-                    make.bottom.equalTo(yb_snp.bottom)
-                }
-            })
         }
     }
-    
+
     
     /// 相等大小布局（具体等于某个值）
     ///
@@ -715,76 +1171,102 @@ extension UIView {
     ///   - views: 需要布局的试图
     ///   - duration: 布局方向
     ///   - Parameter isSafeArea: 是否需要安全区域
-    class func yb_equalSize(views: [UIView], size: yb_layoutSize, isSafeArea: Bool = true) {
+    class func yb_equalSize(views: [UIView], size: yb_layoutSize, isSafeArea: Bool = false) {
         for itemView in views {
             itemView.yb_setSize(size: size, isSafeArea: isSafeArea)
         }
     }
     
-    /// 设置试图大小(如果传的值小于0 就不会设置)
+    
+    /// 设置试图大小(如果传的值小于0 就设置父试图大小)
     ///
     /// - Parameter size: 试图大小
-    func yb_setSize(size: yb_layoutSize?, isSafeArea: Bool = true) {
-        guard let superView = superview else {
-            assert(false, "需要布局的试图 必须添加到父试图, 才可以使用布局")
-            return
-        }
-        snp.makeConstraints { (make) in
-            if let width = size?.width {
-                if width >= 0 {
-                    make.width.equalTo(width)
+    func yb_setSize(size: yb_layoutSize?, isSafeArea: Bool = false) {
+        let yb_superView = self.yb_superView()
+        if let width = size?.width {
+            if width >= 0 {
+                yb_superView.yb_addConstraint(type: .width,
+                                                   item: self,
+                                                   attribute: .width,
+                                                   toItem: nil,
+                                                   toAttribute: .width,
+                                                   constant: width)
+            } else {
+                if #available(iOS 11.0, *) {
+                    yb_superView.yb_addConstraint(type: .width,
+                                                   item: self,
+                                                   attribute: .width,
+                                                   toItem: yb_superView.safeAreaLayoutGuide,
+                                                   toAttribute: .width,
+                                                   constant: width)
                 } else {
-                    if #available(iOS 11.0, *) {
-                        make.width.equalTo(isSafeArea ? superView : superView.safeAreaLayoutGuide)
-                    } else {
-                        make.width.equalTo(superView)
-                    }
+                    yb_superView.yb_addConstraint(type: .width,
+                                                   item: self,
+                                                   attribute: .width,
+                                                   toItem: yb_superView,
+                                                   toAttribute: .width,
+                                                   constant: width)
                 }
             }
-            if let height = size?.height {
-                if height >= 0 {
-                    make.height.equalTo(height)
+        }
+        if let height = size?.height {
+            if height >= 0 {
+                yb_superView.yb_addConstraint(type: .height,
+                                                   item: self,
+                                                   attribute: .height,
+                                                   toItem: nil,
+                                                   toAttribute: .height,
+                                                   constant: height)
+            } else {
+                if #available(iOS 11.0, *) {
+                    yb_superView.yb_addConstraint(type: .height,
+                                                   item: self,
+                                                   attribute: .height,
+                                                   toItem: yb_superView.safeAreaLayoutGuide,
+                                                   toAttribute: .height,
+                                                   constant: height)
                 } else {
-                    if #available(iOS 11.0, *) {
-                        make.height.equalTo(isSafeArea ? superView : superView.safeAreaLayoutGuide)
-                    } else {
-                        make.height.equalTo(superView)
-                    }
+                    yb_superView.yb_addConstraint(type: .height,
+                                                   item: self,
+                                                   attribute: .height,
+                                                   toItem: yb_superView,
+                                                   toAttribute: .height,
+                                                   constant: height)
                 }
             }
         }
     }
+}
+
+// MARK: - 获取指定约束
+extension UIView {
     
-    /// 父试图高度根据子试图大小设定(父试图必须有高度约束,snp更新的时候回报错)
+    /// 获取指定约束(只是简单的获取)
     ///
-    /// - Parameters:
-    ///   - bottomView: 底部的子试图
-    ///   - bottomMargin: 底部的边距
-    func yb_autoHeight(bottomSubView bottomView: UIView, bottomMargin: CGFloat) {
-        guard bottomView.superview == self else {
-            assert(false, "底部试图必须是其直接子试图")
-            return
+    /// - Parameter type: 约束的类型
+    /// - Returns: 返回获取的约束
+    func yb_getLayout(type: YBLayoutConstraintType) -> YBLayoutConstraint? {
+        let yb_superView = self.yb_superView()
+        for layout in yb_superView.constraints where layout.firstItem === self {
+            if let yb_layout = layout as? YBLayoutConstraint {
+                if yb_layout.type == type {
+                    return yb_layout
+                }
+            }
         }
-        layoutIfNeeded()
-        snp.updateConstraints { (make) in
-            make.height.equalTo(bottomView.frame.maxY + bottomMargin)
-        }
+        return nil
     }
     
-    /// 父试图宽度根据子试图大小设定(父试图必须有宽度约束,snp更新的时候回报错)
+    /// 删除约束
     ///
-    /// - Parameters:
-    ///   - bottomView: 底部的子试图
-    ///   - bottomMargin: 底部的边距
-    func yb_autoWidth(rightSubView rightView: UIView, rightMargin: CGFloat) {
-        guard rightView.superview == self else {
-            assert(false, "底部试图必须是其直接子试图")
-            return
+    /// - Parameter type: 约束类型
+    /// - Returns: 需要删除的约束（如果么有找到直接返回空）
+    func yb_removeLayout(type: YBLayoutConstraintType) -> YBLayoutConstraint? {
+        guard let layout = yb_getLayout(type: type) else {
+            return nil
         }
-        layoutIfNeeded()
-        snp.updateConstraints { (make) in
-            make.width.equalTo(rightView.frame.maxX + rightMargin)
-        }
+        superview?.removeConstraint(layout)
+        return layout
     }
 }
 
@@ -799,10 +1281,7 @@ extension UIScrollView {
     ///   - bottomView: 最底部的试图
     ///   - bottomMargin: 最底部的边距
     func yb_setupAutoContentSize(bottomView: UIView, bottomMargin: CGFloat) {
-        guard bottomView.superview == self else {
-            assert(false, "底部试图必须添加到scrollView上面")
-            return
-        }
+        let _ = self.yb_superView()
         layoutIfNeeded()
         contentSize = CGSize(width: bounds.size.width, height: bottomView.frame.maxY + bottomMargin)
     }
@@ -813,10 +1292,7 @@ extension UIScrollView {
     ///   - rightView: 最右边的试图
     ///   - rightMargin: 最右边的边距
     func yb_setupAutoContentSize(rightView: UIView, rightMargin: CGFloat) {
-        guard rightView.superview == self else {
-            assert(false, "底部试图必须添加到scrollView上面")
-            return
-        }
+        let _ = self.yb_superView()
         layoutIfNeeded()
         contentSize = CGSize(width: rightView.frame.maxX + rightMargin, height: bounds.size.height)
     }
@@ -853,7 +1329,7 @@ class YBAotoCellModel: NSObject {
 }
 
 
-/// 设置图片背景试图（当前试图必须使用约束左上角布局，并且需要指定大小）
+/// 设置图片背景试图（当前试图必须使用约束左上角布局, 并且设置大小约束）
 /// 省去collectionView, collectionView性能低
 class YBPhotosBgView: UIView {
     
@@ -862,6 +1338,9 @@ class YBPhotosBgView: UIView {
     fileprivate var itemWidth: CGFloat = 0
     fileprivate var interval: CGFloat = 0
     fileprivate var pics = [String]()
+    fileprivate var imageViews = [UIImageView]()
+    
+    fileprivate var heightLayout: YBLayoutConstraint?
     
     // MARK: - 构造方法
     init(itemWidth: CGFloat, interval: CGFloat, imageClick: @escaping (Int, [String]) -> ()) {
@@ -869,73 +1348,105 @@ class YBPhotosBgView: UIView {
         self.imageClick = imageClick
         self.itemWidth = itemWidth
         self.interval = interval
+        createImageViews()
     }
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
+    fileprivate func createImageViews() {
+        for i in 0..<3 {
+            let y = i >= 1 ? (CGFloat(i) * itemWidth + CGFloat(i) * interval) : 0
+            for j in 0..<3 {
+                let x = j >= 1 ? (CGFloat(j) * itemWidth + CGFloat(j) * interval) : 0
+                getImageView(tag: i * 3 + j, frame: CGRect(x: x, y: y, width: itemWidth, height: itemWidth))
+            }
+        }
+        getImageView(tag: 0, frame: CGRect())
+    }
+    
+    fileprivate func getImageView(tag: Int, frame: CGRect) {
+        let imageView = UIImageView(contentMode: .scaleAspectFill)
+        imageView.alpha = 0.3
+        imageView.frame = frame
+        imageView.isUserInteractionEnabled = true
+        imageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(imageClick(tapGestureRecognizer:))))
+        imageView.tag = tag
+        imageView.clipsToBounds = true
+        addSubview(imageView)
+        imageViews.append(imageView)
+    }
+    
     /// 设置图片背景试图
     func setImages(pics: [String], oneSize: CGSize? = nil) {
-        self.pics = pics
-        for subView in subviews {
-            subView.removeFromSuperview()
+        let _ = self.yb_superView()
+
+        if heightLayout == nil {
+            heightLayout = yb_getLayout(type: .height)
         }
-        guard pics.count > 0 else {
-            snp.updateConstraints { (make) in
-                make.size.equalTo(CGSize())
-            }
+        guard let height_layout = heightLayout else {
+            assert(false, "必须之前强制实现大小约束， 避免性能")
             return
         }
-        var imageViews = [UIImageView]()
-        for index in 0..<pics.count {
-            let imageView = UIImageView(contentMode: .scaleAspectFill)
-            imageView.isUserInteractionEnabled = true
-            imageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(imageClick(tapGestureRecognizer:))))
-            imageView.tag = index
-            imageView.clipsToBounds = true
-            imageView.yb_kf(urlStr: pics[index])
-            imageViews.append(imageView)
+        self.pics = pics
+        guard pics.count > 0 else {
+            height_layout.constant = 0
+            return
         }
+        // 设置图片
+        setImages()
         // 根据高度设置父试图的高度
-        var width: CGFloat = 0
         var height: CGFloat = 0
-        var cellInViews = 3
         switch pics.count {
         case 1:
-            cellInViews = 1
+            var width = itemWidth
             if let oneSize = oneSize {
-                width = oneSize.width
                 height = oneSize.height
+                width = oneSize.width
             } else {
-                width = itemWidth
                 height = itemWidth
             }
+            imageViews[9].frame = CGRect(x: 0, y: 0, width: width, height: height)
         case 2, 3:
-            width = itemWidth * CGFloat(pics.count) + CGFloat(pics.count - 1) * interval
             height = itemWidth
-            cellInViews = pics.count
-        case 4:
-            width = itemWidth * 2 + interval
-            height = itemWidth * 2
-            cellInViews = 2
-        case 5...6:
-            width = itemWidth * 3 + interval * 2
-            height = itemWidth * 2
-            cellInViews = 3
+        case 4...6:
+            height = itemWidth * 2 + interval * 1
+        case 7...9:
+            height = itemWidth * 3 + interval * 2
         default:
-            width = itemWidth * 3 + interval * 2
-            height = itemWidth * 3
-            cellInViews = 3
+            break
         }
-        snp.updateConstraints { (make) in
-            make.size.equalTo(CGSize(width: width, height: height))
+        height_layout.constant = height
+        layoutIfNeeded()
+    }
+    
+    // 设置图片
+    fileprivate func setImages() {
+        for imageView in imageViews {
+            imageView.image = nil
+            imageView.isHidden = true
         }
-        yb_tile(views: imageViews,
-                direction: .top_leftToRight,
-                interval: YBLayoutInteracl(interval: interval),
-                cellInViews: cellInViews,
-                edge: yb_layoutEdgeInsets(left: 0, top: 0, bottom: 0, right: 0))
+        if pics.count == 0 {
+            return
+        } else if pics.count == 1 {
+            imageViews[9].isHidden = false
+            imageViews[9].yb_kf(urlStr: pics.first!)
+        } else if pics.count == 4 {
+            imageViews[0].isHidden = false
+            imageViews[1].isHidden = false
+            imageViews[3].isHidden = false
+            imageViews[4].isHidden = false
+            imageViews[0].yb_kf(urlStr: pics[0])
+            imageViews[1].yb_kf(urlStr: pics[1])
+            imageViews[3].yb_kf(urlStr: pics[2])
+            imageViews[4].yb_kf(urlStr: pics[3])
+        } else {
+            for index in 0..<pics.count {
+                imageViews[index].isHidden = false
+                imageViews[index].yb_kf(urlStr: pics[index])
+            }
+        }
     }
     
     /// 图片点击
@@ -947,8 +1458,61 @@ class YBPhotosBgView: UIView {
     }
 }
 
+// MARK: - 自定义约束
 
+/// 布局的类型
+///
+/// - width: 宽度
+/// - height: 高度
+/// - center: 中心
+/// - centerX: 中心X
+/// - centerY: 中心Y
+/// - top: 顶部
+/// - left: 左边
+/// - right: 右边
+/// - bottom: 底部
+enum YBLayoutConstraintType {
+    case width
+    case height
+    case center
+    case centerX
+    case centerY
+    case top
+    case left
+    case right
+    case bottom
+}
 
+class YBLayoutConstraint: NSLayoutConstraint {
+    var type: YBLayoutConstraintType = .width
+    convenience init(type: YBLayoutConstraintType, item: Any, attribute: NSLayoutAttribute, toItem: Any?, toAttribute: NSLayoutAttribute, constant: CGFloat) {
+        self.init(item: item, attribute: attribute, relatedBy: .equal, toItem: toItem, attribute: toAttribute, multiplier: 1, constant: constant)
+        self.type = type
+        
+    }
+}
+
+extension UIView {
+    
+    func yb_addConstraint(type: YBLayoutConstraintType, item: Any, attribute: NSLayoutAttribute, toItem: Any?, toAttribute: NSLayoutAttribute, constant: CGFloat) {
+        addConstraint(YBLayoutConstraint(type: type, item: item, attribute: attribute, toItem: toItem, toAttribute: toAttribute, constant: constant))
+    }
+}
+
+// MARK: - 功能
+extension UIView {
+    
+    /// 获取父试图（如果获取不到直接断言）
+    ///
+    /// - Returns: 返回父试图
+    func yb_superView() -> UIView {
+        guard let superView = superview else {
+            assert(false, "获取不到父试图")
+            return UIView()
+        }
+        return superView
+    }
+}
 
 
 

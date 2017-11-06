@@ -24,11 +24,11 @@ class YBController_12: YBBaseController {
         tableHeaderView.yb_center(view: superView, size: yb_layoutSize(size: 250))
         
         superView.yb_in(view: view_01,
-                        duration: .leftcenter,
+                        duration: .leftCenter,
                         size: yb_layoutSize(width: 300, height: 70),
                         offset: yb_layoutOffset(horizontal: 10, vertical: 0),
                         isAdd: true)
         
-        superView.yb_autoWidth(rightSubView: view_01, rightMargin: 10)
+//        superView.yb_autoWidth(rightSubView: view_01, rightMargin: 10)
     }
 }

@@ -29,6 +29,6 @@ class YBController_11: YBBaseController {
                         offset: yb_layoutOffset(horizontal: 0, vertical: 10),
                         isAdd: true)
         
-        superView.yb_autoHeight(bottomSubView: view_01, bottomMargin: 10)
+//        superView.yb_autoHeight(bottomSubView: view_01, bottomMargin: 10)
     }
 }

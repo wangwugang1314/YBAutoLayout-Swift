@@ -67,6 +67,7 @@ extension YBController_15 {
         cell.model = dataArr[indexPath.row]
         cell.yb_delegate = self
         cell.model.yb_countCellHeight(cell: cell, bottomView: cell.addBtn, bottomMargin: 10)
+        print("imageHeight = \(cell.imagesBgView.frame)")
         return cell
     }
     
@@ -115,9 +116,10 @@ class YBAutoHeightCell: UITableViewCell {
         
         contentView.yb_alignment(view: titleLabel, duration: .inTop, interval: 8, sideInterval: 8)
         contentView.addSubview(imagesBgView)
+        imagesBgView.backgroundColor = UIColor.orange
         titleLabel.yb_out(view: imagesBgView,
                           duration: .bottomLeft,
-                          size: yb_layoutSize(width: 1, height: 1),
+                          size: yb_layoutSize(width: 300, height: 0),
                           offset: yb_layoutOffset(horizontal: 0, vertical: 8))
         
         contentView.addSubview(addBtn)

@@ -27,27 +27,27 @@ class YBController_8: YBBaseController {
         superView.yb_out(view: view_00,
                         duration: .leftTop,
                         size: yb_layoutSize(width: 20, height: 20),
-                        offset: yb_layoutOffset(horizontal: 0, vertical: 0),
+                        offset: yb_layoutOffset(horizontal: 10, vertical: 10),
                         isAdd: true)
         superView.yb_out(view: view_01,
                         duration: .leftCenter,
                         size: yb_layoutSize(width: 20, height: 20),
-                        offset: yb_layoutOffset(horizontal: 0, vertical: 0),
+                        offset: yb_layoutOffset(horizontal: 10, vertical: 10),
                         isAdd: true)
         superView.yb_out(view: view_02,
                         duration: .leftBottom,
                         size: yb_layoutSize(width: 20, height: 20),
-                        offset: yb_layoutOffset(horizontal: 0, vertical: 0),
+                        offset: yb_layoutOffset(horizontal: 10, vertical: 10),
                         isAdd: true)
         superView.yb_out(view: view_03,
                         duration: .topLeft,
                         size: yb_layoutSize(width: 20, height: 20),
-                        offset: yb_layoutOffset(horizontal: 0, vertical: 0),
+                        offset: yb_layoutOffset(horizontal: 10, vertical: 10),
                         isAdd: true)
         superView.yb_out(view: view_04,
                         duration: .topCenter,
                         size: yb_layoutSize(width: 20, height: 20),
-                        offset: yb_layoutOffset(horizontal: 0, vertical: 0),
+                        offset: yb_layoutOffset(horizontal: 10, vertical: 10),
                         isAdd: true)
         superView.yb_out(view: view_05,
                         duration: .topRight,
@@ -87,22 +87,22 @@ class YBController_8: YBBaseController {
         superView.yb_out(view: view_12,
                         duration: .angleLeftTop,
                         size: yb_layoutSize(width: 20, height: 20),
-                        offset: yb_layoutOffset(horizontal: 0, vertical: 0),
+                        offset: yb_layoutOffset(horizontal: 10, vertical: 10),
                         isAdd: true)
         superView.yb_out(view: view_13,
                          duration: .angleRightTop,
                          size: yb_layoutSize(width: 20, height: 20),
-                         offset: yb_layoutOffset(horizontal: 0, vertical: 0),
+                         offset: yb_layoutOffset(horizontal: 10, vertical: 10),
                          isAdd: true)
         superView.yb_out(view: view_14,
                          duration: .angleLeftBottom,
                          size: yb_layoutSize(width: 20, height: 20),
-                         offset: yb_layoutOffset(horizontal: 0, vertical: 0),
+                         offset: yb_layoutOffset(horizontal: 10, vertical: 10),
                          isAdd: true)
         superView.yb_out(view: view_15,
                          duration: .angleRightBottom,
                          size: yb_layoutSize(width: 20, height: 20),
-                         offset: yb_layoutOffset(horizontal: 0, vertical: 0),
+                         offset: yb_layoutOffset(horizontal: 10, vertical: 10),
                          isAdd: true)
     }
 }
