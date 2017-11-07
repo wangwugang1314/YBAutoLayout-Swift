@@ -36,11 +36,7 @@ class YBController_14: YBBaseController {
         label.numberOfLines = 0
         label.backgroundColor = UIColor.gray
         label.text = dataStr
-        
-//        scrollView.addSubview(label)
-//        label.translatesAutoresizingMaskIntoConstraints = false
-//        scrollView.addConstraint(NSLayoutConstraint(item: label, attribute: .left, relatedBy: .equal, toItem: scrollView, attribute: .left, multiplier: 1, constant: 0))
-//        scrollView.addConstraint(NSLayoutConstraint(item: label, attribute: .top, relatedBy: .equal, toItem: scrollView, attribute: .top, multiplier: 1, constant: 0))
+
         
         
         scrollView.yb_in(view: label, duration: .leftTop, isSafeArea: false, isAdd: true)

@@ -33,7 +33,6 @@ class YBBaseCell: UITableViewCell {
     lazy var showLabel: UILabel = {
         let label = UILabel()
         label.numberOfLines = 0
-        label.backgroundColor = UIColor.orange
         return label
     }()
     
