@@ -22,12 +22,11 @@ extension UITableViewCell {
         let lineView = UIView()
         lineView.backgroundColor = lineColor
         addSubview(lineView)
-        lineView.snp.makeConstraints { (make) in
-            make.left.equalTo(self.snp.left).offset(leftInterval)
-            make.right.equalTo(self.snp.right).offset(-rightInterval)
-            make.height.equalTo(lineWidth)
-            make.bottom.equalTo(self)
-        }
+        lineView.translatesAutoresizingMaskIntoConstraints = false
+        addConstraint(NSLayoutConstraint(item: lineView, attribute: .left, relatedBy: .equal, toItem: self, attribute: .left, multiplier: 1, constant: leftInterval))
+        addConstraint(NSLayoutConstraint(item: lineView, attribute: .right, relatedBy: .equal, toItem: self, attribute: .right, multiplier: 1, constant: -rightInterval))
+        addConstraint(NSLayoutConstraint(item: lineView, attribute: .height, relatedBy: .equal, toItem: nil, attribute: .height, multiplier: 1, constant: lineWidth))
+        addConstraint(NSLayoutConstraint(item: lineView, attribute: .bottom, relatedBy: .equal, toItem: self, attribute: .bottom, multiplier: 1, constant: 0))
         return lineView
     }
 }

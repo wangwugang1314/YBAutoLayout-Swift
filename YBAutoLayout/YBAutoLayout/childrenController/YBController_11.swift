@@ -19,16 +19,16 @@ class YBController_11: YBBaseController {
     }
     
     /// 准备UI
-    override func prepareUI() {
-        super.prepareUI()
-        tableHeaderView.yb_center(view: superView, size: yb_layoutSize(size: 250))
-        
-        superView.yb_in(view: view_01,
-                        duration: .centerTop,
-                        size: yb_layoutSize(width: 70, height: 300),
-                        offset: yb_layoutOffset(horizontal: 0, vertical: 10),
-                        isAdd: true)
-        
-//        superView.yb_autoHeight(bottomSubView: view_01, bottomMargin: 10)
-    }
+//    override func prepareUI() {
+//        super.prepareUI()
+//        tableHeaderView.yb_center(view: superView, size: yb_layoutSize(size: 250))
+//        
+//        superView.yb_in(view: view_01,
+//                        duration: .centerTop,
+//                        size: yb_layoutSize(width: 70, height: 300),
+//                        offset: yb_layoutOffset(horizontal: 0, vertical: 10),
+//                        isAdd: true)
+//        
+////        superView.yb_autoHeight(bottomSubView: view_01, bottomMargin: 10)
+//    }
 }
