@@ -6,6 +6,7 @@ target 'YBAutoLayout' do
   use_frameworks!
 #  pod 'SnapKit'
   pod 'Kingfisher'
+  pod 'GDPerformanceView-Swift', '~> 1.2.0'
 
   # Pods for YBAutoLayout
 

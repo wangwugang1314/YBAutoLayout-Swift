@@ -13,7 +13,7 @@ class YBController_11: YBBaseController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        shwoTextArr = [YBCellModel(title: "1. 三个试图必须都添加到父试图中（不需要时同一个父试图）"),
+        shwoTextArr = [YBCellModel(title: "1. 三个试图必须都添加到父试图中（不需要必须是同一个父试图）"),
                        YBCellModel(title: "2. 有水平跟垂直两种方向排布（默认水平）"),
                        YBCellModel(title: "3. 对齐的方式可以有9中（具体看枚举）"),
                        YBCellModel(title: "4. 在对其的基础上可以进行单方向的平移"),

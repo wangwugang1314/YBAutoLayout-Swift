@@ -30,7 +30,7 @@ class ViewController: UITableViewController {
                                YBCellModel(title: "15. cell高度自适应并且缓存高度"),
                                YBCellModel(title: "16. 测试")
     ]
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         prepareUI()

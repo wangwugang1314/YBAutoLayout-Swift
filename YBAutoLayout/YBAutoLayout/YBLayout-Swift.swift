@@ -1196,7 +1196,7 @@ extension UIView {
     ///   - referenceOne: 是否参照第一个试图
     ///   - referenceDirection: 参照位置
     ///   - offset: 单方向平移
-    func yb_between(direction: YBLayoutDuration = .horizon, oneView: UIView, twoView: UIView, size: yb_layoutSize = yb_layoutSize(), referenceOne: Bool = true, referenceDirection: YBLayoutBetweenReference = .two_two, offset: CGFloat = 0) {
+    func yb_between(direction: YBLayoutDuration = .horizon, oneView: UIView, twoView: UIView, size: yb_layoutSize = yb_layoutSize(), referenceOne: Bool = true, referenceDirection: YBLayoutBetweenReference = .two_two, offset: yb_layoutOffset = yb_layoutOffset()) {
         // 判断全部添加到父试图
         guard superview != nil, oneView.superview != nil, twoView.superview != nil else {
             assert(false, "必须全部添加到父试图才能进行约束")
@@ -1249,7 +1249,8 @@ extension UIView {
             saveSuperView.yb_addConstraint(item: self,
                                            attribute: .centerX,
                                            toItem: placeholderView,
-                                           toAttribute: .centerX)
+                                           toAttribute: .centerX,
+                                           constant: offset.horizontal)
             saveSuperView.yb_addConstraint(item: placeholderView,
                                            attribute: .height,
                                            toItem: nil,
@@ -1261,55 +1262,55 @@ extension UIView {
                                                attribute: .bottom,
                                                toItem: placeholderView,
                                                toAttribute: .top,
-                                               constant: offset)
+                                               constant: offset.vertical)
             case .one_two:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .centerY,
                                                toItem: placeholderView,
                                                toAttribute: .top,
-                                               constant: offset)
+                                               constant: offset.vertical)
             case .one_three:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .top,
                                                toItem: placeholderView,
                                                toAttribute: .top,
-                                               constant: offset)
+                                               constant: offset.vertical)
             case .two_one:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .bottom,
                                                toItem: placeholderView,
                                                toAttribute: .centerY,
-                                               constant: offset)
+                                               constant: offset.vertical)
             case .two_two:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .centerY,
                                                toItem: placeholderView,
                                                toAttribute: .centerY,
-                                               constant: offset)
+                                               constant: offset.vertical)
             case .two_three:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .top,
                                                toItem: placeholderView,
                                                toAttribute: .centerY,
-                                               constant: offset)
+                                               constant: offset.vertical)
             case .three_one:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .bottom,
                                                toItem: placeholderView,
                                                toAttribute: .bottom,
-                                               constant: offset)
+                                               constant: offset.vertical)
             case .three_two:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .centerY,
                                                toItem: placeholderView,
                                                toAttribute: .bottom,
-                                               constant: offset)
+                                               constant: offset.vertical)
             case .three_three:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .top,
                                                toItem: placeholderView,
                                                toAttribute: .bottom,
-                                               constant: offset)
+                                               constant: offset.vertical)
             }
         default:
             saveSuperView.yb_addConstraint(item: placeholderView,
@@ -1344,7 +1345,8 @@ extension UIView {
             saveSuperView.yb_addConstraint(item: self,
                                            attribute: .centerY,
                                            toItem: placeholderView,
-                                           toAttribute: .centerY)
+                                           toAttribute: .centerY,
+                                           constant: offset.vertical)
             // 设置试图位置
             switch referenceDirection {
             case .one_one:
@@ -1352,55 +1354,55 @@ extension UIView {
                                                attribute: .right,
                                                toItem: placeholderView,
                                                toAttribute: .left,
-                                               constant: offset)
+                                               constant: offset.horizontal)
             case .one_two:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .centerX,
                                                toItem: placeholderView,
                                                toAttribute: .left,
-                                               constant: offset)
+                                               constant: offset.horizontal)
             case .one_three:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .left,
                                                toItem: placeholderView,
                                                toAttribute: .left,
-                                               constant: offset)
+                                               constant: offset.horizontal)
             case .two_one:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .right,
                                                toItem: placeholderView,
                                                toAttribute: .centerX,
-                                               constant: offset)
+                                               constant: offset.horizontal)
             case .two_two:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .centerX,
                                                toItem: placeholderView,
                                                toAttribute: .centerX,
-                                               constant: offset)
+                                               constant: offset.horizontal)
             case .two_three:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .left,
                                                toItem: placeholderView,
                                                toAttribute: .centerX,
-                                               constant: offset)
+                                               constant: offset.horizontal)
             case .three_one:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .left,
                                                toItem: placeholderView,
                                                toAttribute: .right,
-                                               constant: offset)
+                                               constant: offset.horizontal)
             case .three_two:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .centerX,
                                                toItem: placeholderView,
                                                toAttribute: .right,
-                                               constant: offset)
+                                               constant: offset.horizontal)
             case .three_three:
                 saveSuperView.yb_addConstraint(item: self,
                                                attribute: .right,
                                                toItem: placeholderView,
                                                toAttribute: .right,
-                                               constant: offset)
+                                               constant: offset.horizontal)
             }
         }
         // 设置大小

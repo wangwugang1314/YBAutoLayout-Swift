@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import GDPerformanceView_Swift
 
 class YBBaseController: UITableViewController {
     
@@ -35,12 +36,18 @@ class YBBaseController: UITableViewController {
     let view_17 = YBView()
     let view_18 = YBView()
     let view_19 = YBView()
+    
+    
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         // 准备UI
         prepareUI()
+        
+       
+        
+        
     }
     
     /// 头试图 懒加载

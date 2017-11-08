@@ -1,12 +1,15 @@
 PODS:
+  - GDPerformanceView-Swift (1.2.0)
   - Kingfisher (4.0.1)
 
 DEPENDENCIES:
+  - GDPerformanceView-Swift (~> 1.2.0)
   - Kingfisher
 
 SPEC CHECKSUMS:
+  GDPerformanceView-Swift: 5f12f13dcdca4cb87f91ef91ba6b50981421c57f
   Kingfisher: b771785e9461ed4b8686d40e7145f9e58100cb24
 
-PODFILE CHECKSUM: 5e4d56736f3130e7ddb72de06acc9bd68e285bea
+PODFILE CHECKSUM: 85c7e9082c991516d3a975aa8adab72c4bf5f377
 
 COCOAPODS: 1.4.0.beta.1

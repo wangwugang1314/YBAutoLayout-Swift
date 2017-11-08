@@ -19,6 +19,7 @@
 		AD042B901F7DF68A00734D27 /* YBAutoLayoutUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD042B8F1F7DF68A00734D27 /* YBAutoLayoutUITests.swift */; };
 		AD042BA01F7DF9CC00734D27 /* YBBaseController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD042B9F1F7DF9CC00734D27 /* YBBaseController.swift */; };
 		AD0B921C1FABFA7E009648E4 /* YBController_16.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD0B921B1FABFA7E009648E4 /* YBController_16.swift */; };
+		AD0BDE5B1FB19E4500393320 /* UIViewExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD0BDE5A1FB19E4400393320 /* UIViewExtension.swift */; };
 		AD2EB8FF1F7E2A720056A233 /* YBLayout-Swift.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD2EB8FD1F7E2A720056A233 /* YBLayout-Swift.swift */; };
 		AD2EB9001F7E2A720056A233 /* UIColorCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD2EB8FE1F7E2A720056A233 /* UIColorCategory.swift */; };
 		AD2EB9021F7E2B8B0056A233 /* YBCellModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD2EB9011F7E2B8B0056A233 /* YBCellModel.swift */; };
@@ -85,6 +86,7 @@
 		AD042B911F7DF68A00734D27 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AD042B9F1F7DF9CC00734D27 /* YBBaseController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YBBaseController.swift; sourceTree = "<group>"; };
 		AD0B921B1FABFA7E009648E4 /* YBController_16.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YBController_16.swift; sourceTree = "<group>"; };
+		AD0BDE5A1FB19E4400393320 /* UIViewExtension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UIViewExtension.swift; sourceTree = "<group>"; };
 		AD2EB8FD1F7E2A720056A233 /* YBLayout-Swift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "YBLayout-Swift.swift"; sourceTree = "<group>"; };
 		AD2EB8FE1F7E2A720056A233 /* UIColorCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIColorCategory.swift; sourceTree = "<group>"; };
 		AD2EB9011F7E2B8B0056A233 /* YBCellModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YBCellModel.swift; sourceTree = "<group>"; };
@@ -197,6 +199,7 @@
 				AD877A9D1F8C5E1F00B5B5FB /* YBLoadImage.swift */,
 				AD877A9B1F8C5DF800B5B5FB /* UIImageViewExtensions.swift */,
 				ADFEAC301F8B82BE00D8A58A /* IntExtensions.swift */,
+				AD0BDE5A1FB19E4400393320 /* UIViewExtension.swift */,
 				AD2EB9091F7E3BAF0056A233 /* YBClass.swift */,
 				AD2EB9051F7E2CCA0056A233 /* UITableViewExtensions.swift */,
 				AD2EB8FE1F7E2A720056A233 /* UIColorCategory.swift */,
@@ -436,10 +439,12 @@
 			);
 			inputPaths = (
 				"${SRCROOT}/Pods/Target Support Files/Pods-YBAutoLayout/Pods-YBAutoLayout-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/GDPerformanceView-Swift/GDPerformanceView_Swift.framework",
 				"${BUILT_PRODUCTS_DIR}/Kingfisher/Kingfisher.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GDPerformanceView_Swift.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Kingfisher.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -562,6 +567,7 @@
 				AD2EB9021F7E2B8B0056A233 /* YBCellModel.swift in Sources */,
 				ADFEAC311F8B82BE00D8A58A /* IntExtensions.swift in Sources */,
 				ADFEAC2B1F8B7EAC00D8A58A /* YBController_11.swift in Sources */,
+				AD0BDE5B1FB19E4500393320 /* UIViewExtension.swift in Sources */,
 				AD2EB90E1F7E50AE0056A233 /* YBController_2.swift in Sources */,
 				AD635E041F8B72BC00CED051 /* YBController_3.swift in Sources */,
 				AD877A9C1F8C5DF800B5B5FB /* UIImageViewExtensions.swift in Sources */,
